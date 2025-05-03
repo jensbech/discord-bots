@@ -1,0 +1,1 @@
+Synced from https://git.bechsor.no/jens/discord-bots
