@@ -1,1 +1,1 @@
-Synced from https://git.bechsor.no/jens/discord-bots
+This repo is synced from https://git.bechsor.no/jens/discord-bots
