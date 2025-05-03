@@ -1,0 +1,5 @@
+- import stack from prod
+- reverse proxy
+- point domain provider to hostmanet
+- ???
+- Profit

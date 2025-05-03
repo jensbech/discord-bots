@@ -1,0 +1,16 @@
+{
+  "name": "app",
+  "version": "1.0.50",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "bun run --watch src/index.ts"
+  },
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "elysia": "^1.2.25"
+  },
+  "devDependencies": {
+    "bun-types": "^1.2.9"
+  },
+  "module": "src/index.js"
+}
