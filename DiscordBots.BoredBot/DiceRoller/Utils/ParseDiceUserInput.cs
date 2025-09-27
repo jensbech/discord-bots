@@ -2,12 +2,12 @@ using System.Text.RegularExpressions;
 
 namespace DiscordBots.BoredBot.DiceRoller.Utils
 {
-    public static class ParseDiceUserInput
+    public static partial class ParseDiceUserInput
     {
-        private static readonly HashSet<int> AllowedDiceSides = new()
-        {
+        private static readonly HashSet<int> AllowedDiceSides =
+        [
             Dice.Four, Dice.Six, Dice.Ten, Dice.Twelve, Dice.Twenty, Dice.Hundred
-        };
+        ];
 
         public static DiceParseResult Parse(string input)
         {
@@ -17,20 +17,20 @@ namespace DiscordBots.BoredBot.DiceRoller.Utils
             }
 
             var clean = input.ToLowerInvariant().Trim();
-            clean = Regex.Replace(clean, @"\b(roll|dice|die)\b", "");
-            clean = Regex.Replace(clean, @"\s+", "");
+            clean = MyRegex1().Replace(clean, "");
+            clean = MyRegex2().Replace(clean, "");
 
-            if (Regex.IsMatch(clean, @"^\d+$"))
+            if (MyRegex().IsMatch(clean))
             {
                 var sides = int.Parse(clean);
                 if (!AllowedDiceSides.Contains(sides))
                 {
                     throw new ArgumentException($"Allowed dice sides are {string.Join(", ", AllowedDiceSides)}. Received: {sides}");
                 }
-                return new DiceParseResult { Dices = new List<int> { sides }, Mod = 0 };
+                return new DiceParseResult { Dices = [sides], Mod = 0 };
             }
 
-            var tokenRegex = new Regex(@"(\d*d\d+|[+\-]\d+)");
+            var tokenRegex = MyRegex3();
             var tokens = tokenRegex.Matches(clean).Cast<Match>().Select(m => m.Value).ToArray();
 
             if (tokens.Length == 0)
@@ -43,7 +43,7 @@ namespace DiscordBots.BoredBot.DiceRoller.Utils
 
             foreach (var token in tokens)
             {
-                if (token.Contains("d"))
+                if (token.Contains('d'))
                 {
                     var parts = token.Split('d');
                     var countPart = parts[0];
@@ -77,5 +77,14 @@ namespace DiscordBots.BoredBot.DiceRoller.Utils
 
             return new DiceParseResult { Dices = dices, Mod = mod };
         }
+
+        [GeneratedRegex(@"^\d+$")]
+        private static partial Regex MyRegex();
+        [GeneratedRegex(@"\b(roll|dice|die)\b")]
+        private static partial Regex MyRegex1();
+        [GeneratedRegex(@"\s+")]
+        private static partial Regex MyRegex2();
+        [GeneratedRegex(@"(\d*d\d+|[+\-]\d+)")]
+        private static partial Regex MyRegex3();
     }
 }

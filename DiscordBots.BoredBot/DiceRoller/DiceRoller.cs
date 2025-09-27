@@ -1,13 +1,8 @@
 namespace DiscordBots.BoredBot.DiceRoller
 {
-    public class DiceRoller
+    public class DiceRoller(string username)
     {
-        private readonly string _username;
-
-        public DiceRoller(string username)
-        {
-            _username = username;
-        }
+        private readonly string _username = username;
 
         public async Task<(int RollResult, string? Message)> Roll(int dice)
         {
@@ -21,7 +16,7 @@ namespace DiscordBots.BoredBot.DiceRoller
 
             if (crit.Failure || crit.Success)
             {
-                return (outcome, crit.Success 
+                return (outcome, crit.Success
                     ? await HandleCritical(Critical.Success)
                     : await HandleCritical(Critical.Fail));
             }
@@ -29,7 +24,7 @@ namespace DiscordBots.BoredBot.DiceRoller
             return (outcome, null);
         }
 
-        private (int Outcome, (bool Failure, bool Success) Crit) GetSingleDiceRollOutcome(int dice)
+        private static (int Outcome, (bool Failure, bool Success) Crit) GetSingleDiceRollOutcome(int dice)
         {
             var random = new Random();
             var roll = random.Next(1, dice + 1);
@@ -41,7 +36,7 @@ namespace DiscordBots.BoredBot.DiceRoller
             };
         }
 
-        private async Task<string> HandleCritical(Critical critical)
+        private static async Task<string> HandleCritical(Critical critical)
         {
             await Task.Delay(0);
             return critical switch

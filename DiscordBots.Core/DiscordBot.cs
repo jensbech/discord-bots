@@ -25,9 +25,7 @@ namespace DiscordBots.Core
         private async Task LoginAsync()
         {
             if (string.IsNullOrEmpty(_token))
-            {
                 throw new InvalidOperationException("No token provided when attempting to log in bot");
-            }
 
             try
             {

@@ -18,7 +18,7 @@ namespace DiscordBots.BoredBot.DiceRoller
 
     public class DiceParseResult
     {
-        public List<int> Dices { get; set; } = new();
+        public List<int> Dices { get; set; } = [];
         public int Mod { get; set; }
     }
 }
