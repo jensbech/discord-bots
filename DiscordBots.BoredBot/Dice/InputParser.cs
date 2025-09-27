@@ -58,7 +58,7 @@ public static partial class InputParser
         if (rawTokens.Length == 0)
         {
             errorMessageToUser =
-                "Unable to parse any dice or modifiers. Examples: '3d6+5', 'd20-2', '2d8+1d6+4'.";
+                $"Unable to parse any dice or modifiers. Examples: '3d6+5', 'd20-2', '2d8+1d6+4'. This is what you wrote: '{userTextInput}'.";
             return false;
         }
 

@@ -10,6 +10,7 @@ namespace DiscordBots.Core
         private readonly string _token;
         protected readonly DiscordSocketClient _client;
         private readonly SlashCommandBuilder[] _commands;
+        protected IReadOnlyList<SlashCommandBuilder> Commands => _commands;
         protected readonly ILogger _logger;
 
         protected DiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
@@ -97,6 +98,7 @@ namespace DiscordBots.Core
                         );
                     }
                 };
+                _client.SlashCommandExecuted += OnSlashCommandInternalAsync;
             }
             catch (Exception error)
             {
@@ -104,16 +106,53 @@ namespace DiscordBots.Core
             }
         }
 
+        private async Task OnSlashCommandInternalAsync(SocketSlashCommand command)
+        {
+            try
+            {
+                await OnSlashCommandAsync(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Unhandled exception in slash command handler for /{Command}",
+                    command.CommandName
+                );
+
+                var userInput = command.Data.Options is null
+                    ? string.Empty
+                    : string.Join(
+                        " ",
+                        command
+                            .Data.Options.Select(o => o.Value?.ToString())
+                            .Where(v => !string.IsNullOrWhiteSpace(v))
+                    );
+                var friendly = string.IsNullOrWhiteSpace(userInput)
+                    ? $"Something went wrong handling /{command.CommandName}. Please try again or use /help."
+                    : $"Something went wrong handling /{command.CommandName} {userInput}. Please try again or use /help.";
+
+                if (!command.HasResponded)
+                    await command.RespondAsync(friendly, ephemeral: true);
+                else
+                    await command.FollowupAsync(friendly, ephemeral: true);
+            }
+        }
+
+        protected virtual Task OnSlashCommandAsync(SocketSlashCommand command) =>
+            Task.CompletedTask;
+
+        protected static string? GetStringOption(SocketSlashCommand command, string name) =>
+            command.Data.Options?.FirstOrDefault(o => o.Name == name)?.Value?.ToString();
+
         public static BotEnvironmentVariables EnsureEnvironmentVariables()
         {
             string[] requiredVars = ["DISCORD_BOT_TOKEN", "APPLICATION_ID"];
             var missing = requiredVars.Where(name =>
                 Environment.GetEnvironmentVariable(name) is null
             );
-
             if (missing.Any())
                 throw new Exception($"Missing environment variables: {string.Join(", ", missing)}");
-
             return new BotEnvironmentVariables(
                 Environment.GetEnvironmentVariable(requiredVars[0])!,
                 Environment.GetEnvironmentVariable(requiredVars[1])!

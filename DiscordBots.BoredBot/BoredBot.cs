@@ -12,10 +12,7 @@ namespace DiscordBots.BoredBot
         private static BoredBot? _instance;
 
         private BoredBot(string token, SlashCommandBuilder[] commands, ILogger<BoredBot> logger)
-            : base(token, commands, logger)
-        {
-            UseCommand();
-        }
+            : base(token, commands, logger) { }
 
         public static async Task<BoredBot> GetOrCreateInstance(
             BotEnvironmentVariables envVars,
@@ -31,69 +28,47 @@ namespace DiscordBots.BoredBot
             return _instance;
         }
 
-        private void UseCommand()
+        protected override async Task OnSlashCommandAsync(SocketSlashCommand command)
         {
-            _client.SlashCommandExecuted += async interaction =>
+            switch (command.CommandName)
             {
-                var commandName = interaction.CommandName;
-                var user = interaction.User;
-
-                if (interaction.Channel is not ISocketMessageChannel channel)
+                case "roll":
                 {
-                    _logger.LogWarning(
-                        "Slash command /{Command} received but channel was null",
-                        commandName
-                    );
-                    await interaction.RespondAsync(
-                        "Unexpected error determining channel",
-                        ephemeral: true
-                    );
-                    return;
+                    var input = GetStringOption(command, "input");
+                    if (string.IsNullOrWhiteSpace(input))
+                    {
+                        await command.RespondAsync(
+                            "Input required for /roll. Example: d20 or 2d8+4",
+                            ephemeral: true
+                        );
+                        _logger.LogSlashError(command, "Missing dice expression");
+                        return;
+                    }
+                    if (Roller.TryHandleRollCommand(input, out var resultMessage))
+                    {
+                        await command.RespondAsync(resultMessage);
+                        _logger.LogSlash(command, resultMessage);
+                    }
+                    else
+                    {
+                        await command.RespondAsync(resultMessage, ephemeral: true);
+                        _logger.LogSlashError(command, resultMessage);
+                    }
+                    break;
                 }
-
-                var guildName = (channel as SocketGuildChannel)?.Guild?.Name ?? "DM";
-                var channelName = channel.Name;
-                var textInput = interaction.Data.Options?.FirstOrDefault()?.Value?.ToString();
-
-                switch (commandName)
+                case "help":
                 {
-                    case "roll":
-                    {
-                        if (string.IsNullOrWhiteSpace(textInput))
-                        {
-                            await interaction.RespondAsync(
-                                "Input required for /roll. Example: d20 or 2d8+4",
-                                ephemeral: true
-                            );
-                            _logger.LogSlashError(interaction, "Missing dice expression");
-                            break;
-                        }
-                        if (Roller.TryHandleRollCommand(textInput, out var resultMessage))
-                        {
-                            await interaction.RespondAsync(resultMessage);
-                            _logger.LogSlash(interaction, resultMessage);
-                        }
-                        else
-                        {
-                            await interaction.RespondAsync(resultMessage, ephemeral: true);
-                            _logger.LogSlashError(interaction, resultMessage);
-                        }
-                        break;
-                    }
-                    case "help":
-                    {
-                        await interaction.RespondAsync("Available commands: /roll, /help");
-                        _logger.LogSlash(interaction);
-                        break;
-                    }
-                    default:
-                    {
-                        await interaction.RespondAsync("Unknown command.", ephemeral: true);
-                        _logger.LogSlashError(interaction, "Unhandled command");
-                        break;
-                    }
+                    await command.RespondAsync("Available commands: /roll, /help");
+                    _logger.LogSlash(command);
+                    break;
                 }
-            };
+                default:
+                {
+                    await command.RespondAsync("Unknown command.", ephemeral: true);
+                    _logger.LogSlashError(command, "Unhandled command");
+                    break;
+                }
+            }
         }
     }
 }
