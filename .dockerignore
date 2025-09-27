@@ -1,0 +1,21 @@
+# Ignore Git metadata
+.git
+.gitignore
+
+# Build outputs
+**/bin
+**/obj
+
+# User secrets / local config
+**/secrets.json
+*.user
+
+# IDE / tooling
+.vscode
+.idea
+*.swp
+
+# Misc (keep Dockerfiles so builds work)
+README*.md
+LICENSE
+justfile
