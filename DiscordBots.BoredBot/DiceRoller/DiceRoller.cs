@@ -4,15 +4,14 @@ namespace DiscordBots.BoredBot.DiceRoller
     {
         private readonly string _username = username;
 
-        public async Task<(int RollResult, string? Message)> Roll(int dice)
+        public static async Task<(int RollResult, string? Message)> Roll(int sentDice)
         {
             var allowedDice = new[] { Dice.Four, Dice.Six, Dice.Ten, Dice.Twelve, Dice.Twenty, Dice.Hundred };
-            if (!allowedDice.Contains(dice))
-            {
-                throw new ArgumentException($"Invalid dice type: {dice}");
-            }
 
-            var (outcome, crit) = GetSingleDiceRollOutcome(dice);
+            if (!allowedDice.Contains(sentDice))
+                throw new ArgumentException($"Invalid dice type: {sentDice}");
+
+            var (outcome, crit) = GetSingleDiceRollOutcome(sentDice);
 
             if (crit.Failure || crit.Success)
             {

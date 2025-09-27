@@ -1,6 +1,5 @@
 using Discord;
 using Discord.WebSocket;
-using DiscordBots.BoredBot.DiceRoller;
 using DiscordBots.BoredBot.DiceRoller.Utils;
 using DiscordBots.Core;
 
@@ -35,11 +34,7 @@ namespace DiscordBots.BoredBot
                 var userInput = interaction.Data.Options?.FirstOrDefault()?.Value?.ToString();
 
                 if (string.IsNullOrEmpty(userInput))
-                {
                     throw new InvalidOperationException("Expected input to be defined");
-                }
-
-                Console.WriteLine("got command");
 
                 switch (commandName)
                 {
@@ -50,77 +45,45 @@ namespace DiscordBots.BoredBot
             };
         }
 
-        private async Task<string> HandleRollCommand(string inputStringFromUser, string username)
+        private static async Task<string> HandleRollCommand(string userInput, string username)
         {
-            DiceParseResult parsedInputResult = new() { Dices = new List<int>(), Mod = 0 };
-
-            try
-            {
-                parsedInputResult = ParseDiceUserInput.Parse(inputStringFromUser);
-            }
-            catch (Exception error)
-            {
-                return error.Message;
-            }
+            if (!ParseDiceUserInput.TryParse(userInput, out var parsed, out var parseError))
+                return parseError!;
 
             var roller = new DiceRoller.DiceRoller(username);
-            var resultsMessages = new List<string>();
+            var lines = new List<string>();
+            var rolls = new List<(int sides, int result, string? message)>();
+            var total = 0;
 
-            if (parsedInputResult.Dices.Count == 1)
+            foreach (var sides in parsed.Dices)
             {
-                var singleDie = parsedInputResult.Dices[0];
-                var (rollResult, message) = await roller.Roll(singleDie);
+                var (value, msg) = await DiceRoller.DiceRoller.Roll(sides);
+                rolls.Add((sides, value, string.IsNullOrWhiteSpace(msg) ? null : msg));
+                total += value;
+            }
 
-                var mod = parsedInputResult.Mod;
-                var finalResult = rollResult + mod;
+            for (int i = 0; i < rolls.Count; i++)
+            {
+                var (sides, value, msg) = rolls[i];
+                var prefix = rolls.Count == 1 ? string.Empty : $"Roll #{i + 1}: ";
+                var line = $"{prefix}(d{sides}) => {value}";
+                if (msg != null) line += $" **{msg}**";
+                lines.Add(line);
+            }
 
-                var singleLine = $"(d{singleDie}) => {rollResult}";
+            var mod = parsed.Mod;
+            if (rolls.Count > 1 || mod != 0)
+            {
+                var final = total + mod;
                 if (mod != 0)
                 {
                     var sign = mod > 0 ? "+" : "-";
-                    singleLine += $" {sign}{Math.Abs(mod)} = {finalResult}";
+                    lines.Add($"Modifier: {sign}{Math.Abs(mod)}");
                 }
-
-                if (!string.IsNullOrEmpty(message))
-                {
-                    singleLine += $"\n{message}";
-                }
-
-                resultsMessages.Add(singleLine);
-            }
-            else
-            {
-                resultsMessages.Add($"You rolled {parsedInputResult.Dices.Count} dice!");
-
-                var sum = 0;
-                var rollCount = 1;
-
-                foreach (var dieInput in parsedInputResult.Dices)
-                {
-                    var (rollResult, message) = await roller.Roll(dieInput);
-                    sum += rollResult;
-
-                    var prefix = $"Roll #{rollCount}: ";
-                    var suffix = !string.IsNullOrEmpty(message) ? $" **{message}**" : "";
-
-                    resultsMessages.Add($"{prefix}(d{dieInput}) => {rollResult}{suffix}");
-                    rollCount++;
-                }
-
-                var mod = parsedInputResult.Mod;
-                var finalResult = sum + mod;
-                if (mod != 0)
-                {
-                    var sign = mod > 0 ? "+" : "-";
-                    resultsMessages.Add($"Result: {sum} {sign} {Math.Abs(mod)} = {finalResult}");
-                }
-                else
-                {
-                    resultsMessages.Add($"**Final result: {sum}**");
-                }
+                lines.Add($"Total: {final}");
             }
 
-            return string.Join("\n", resultsMessages);
+            return string.Join("\n", lines);
         }
     }
 }
