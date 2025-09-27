@@ -1,20 +1,15 @@
 #!/usr/bin/env sh
 set -e
 
+MAJOR_VERSION="1"
+
 IMAGE_NAME=${1:-"jensbech/bored-bot"}
 PLATFORMS=${PLATFORMS:-"linux/amd64"}
 
-# Hard-coded major version - change this manually for major releases
-MAJOR_VERSION="1"
 
-# Get current latest version from Docker Hub API and increment minor version
-echo "🔍 Querying current latest version for major version v${MAJOR_VERSION}..."
-
-# Extract repository name (remove registry prefix if present)
 REPO_NAME=$(echo "$IMAGE_NAME" | sed 's|.*\/||')
 NAMESPACE=$(echo "$IMAGE_NAME" | sed 's|\/.*||')
 
-# Query Docker Hub API for tags matching our major version
 CURRENT_VERSION=$(curl -s "https://hub.docker.com/v2/repositories/${NAMESPACE}/${REPO_NAME}/tags/?page_size=100" | \
     grep -o '"name":"v'${MAJOR_VERSION}'\.[0-9]\+\.[0-9]\+"' | \
     sed 's/"name":"//;s/"//' | \
@@ -25,11 +20,9 @@ if [ -z "$CURRENT_VERSION" ]; then
     VERSION="v${MAJOR_VERSION}.0.0"
 else
     echo "   Current latest v${MAJOR_VERSION}.x.x version: $CURRENT_VERSION"
-    # Parse version components
     BASE_VERSION=$(echo "$CURRENT_VERSION" | sed 's/^v//')
     MINOR=$(echo "$BASE_VERSION" | cut -d. -f2)
-    
-    # Increment minor version, reset patch to 0
+
     MINOR=$((MINOR + 1))
     VERSION="v${MAJOR_VERSION}.${MINOR}.0"
     echo "   New version: $VERSION"
