@@ -55,6 +55,6 @@ docker buildx build \
     .
 
 echo ""
-echo "✅ Successfully published:"
+echo "Published:"
 echo "   $IMAGE_NAME:latest"
 echo "   $IMAGE_NAME:$VERSION"
