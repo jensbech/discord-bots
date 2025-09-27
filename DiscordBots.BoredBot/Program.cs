@@ -1,10 +1,7 @@
 using DiscordBots.BoredBot;
+using DiscordBots.Core;
 
-if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN")) || 
-    string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPLICATION_ID")))
-{
-    throw new InvalidOperationException("DISCORD_BOT_TOKEN and APPLICATION_ID must be defined in the environment variables.");
-}
+DiscordBot.VerifyEnvironmentVariables(["APPLICATION_ID", "DISCORD_BOT_TOKEN"]);
 
 await BoredBot.GetInstanceAsync(
     Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN")!,

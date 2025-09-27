@@ -1,5 +1,4 @@
 using Discord;
-using Discord.Net;
 using Discord.WebSocket;
 
 namespace DiscordBots.Core
@@ -25,7 +24,9 @@ namespace DiscordBots.Core
         private async Task LoginAsync()
         {
             if (string.IsNullOrEmpty(_token))
+            {
                 throw new InvalidOperationException("No token provided when attempting to log in bot");
+            }
 
             try
             {
@@ -64,6 +65,14 @@ namespace DiscordBots.Core
             {
                 Console.WriteLine($"Initialization error: {error.Message}");
             }
+        }
+
+        public static void VerifyEnvironmentVariables(List<string> environmentVariableNames)
+        {
+            var missingVariables = environmentVariableNames.Where(var => Environment.GetEnvironmentVariable(var) == null).ToList();
+
+            if (missingVariables.Count > 0)
+                throw new Exception($"Missing environment variables: {string.Join(", ", missingVariables)}");
         }
     }
 }
