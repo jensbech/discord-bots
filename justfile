@@ -10,3 +10,8 @@ bored-dev:
 
 build:
     dotnet build
+
+clean:
+    dotnet clean
+    find . -name "bin" -type d -exec rm -rf {} + 2>/dev/null || true
+    find . -name "obj" -type d -exec rm -rf {} + 2>/dev/null || true
