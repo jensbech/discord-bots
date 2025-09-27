@@ -5,7 +5,7 @@ publish IMAGE='jensbech/bored-bot':
     chmod +x ./scripts/build_and_publish.sh
     ./scripts/build_and_publish.sh {{IMAGE}}
 
-bored-dev:
+run:
     cd DiscordBots.BoredBot && dotnet run
 
 build:
