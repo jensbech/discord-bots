@@ -16,11 +16,11 @@ namespace DiscordBots.BoredBot
             UseCommand();
         }
 
-        public static async Task<BoredBot> GetInstanceAsync(string token, string applicationId, SlashCommandBuilder[] commands)
+        public static async Task<BoredBot> GetInstanceAsync(BotEnvironmentVariables envVars, SlashCommandBuilder[] commands)
         {
             if (_instance == null)
             {
-                _instance = new BoredBot(token, applicationId, commands);
+                _instance = new BoredBot(envVars.DiscordBotToken, envVars.ApplicationId, commands);
                 await _instance.InitializeAsync("Bored Bot");
             }
             return _instance;

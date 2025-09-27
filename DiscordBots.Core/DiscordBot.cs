@@ -67,11 +67,29 @@ namespace DiscordBots.Core
             }
         }
 
-        public static void VerifyEnvironmentVariables(List<string> environmentVariableNames)
+        public static BotEnvironmentVariables EnsureEnvironmentVariables()
         {
-            var missing = environmentVariableNames.Where(var => Environment.GetEnvironmentVariable(var) == null).ToList();
-            if (missing.Count > 0)
+            string[] requiredVars = ["DISCORD_BOT_TOKEN", "APPLICATION_ID"];
+            var missing = requiredVars.Where(name => Environment.GetEnvironmentVariable(name) is null);
+
+            if (missing.Any())
                 throw new Exception($"Missing environment variables: {string.Join(", ", missing)}");
+
+            return new BotEnvironmentVariables(
+                Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN")!,
+                Environment.GetEnvironmentVariable("APPLICATION_ID")!);
+        }
+    }
+
+    public sealed class BotEnvironmentVariables
+    {
+        public string DiscordBotToken { get; }
+        public string ApplicationId { get; }
+
+        internal BotEnvironmentVariables(string discordBotToken, string applicationId)
+        {
+            DiscordBotToken = discordBotToken;
+            ApplicationId = applicationId;
         }
     }
 }
