@@ -6,7 +6,7 @@ tag=${tag:-latest}
 
 echo "Publishing with tag: $tag and latest"
 
-IMAGE_NAME=${1:-"your-docker-user/discord-bored-bot"}
+IMAGE_NAME=${1:-"jensbech/bored-bot"}
 PLATFORMS=${PLATFORMS:-"linux/amd64"}
 
 build_args=""
