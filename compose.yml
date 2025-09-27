@@ -1,6 +1,6 @@
 services:
   discord-bored-bot:
-    image: jensbech/bored-bot:latest
+    image: jensbech/bored-bot:${BOT_VERSION:-latest}
     container_name: discord-bored-bot
     restart: unless-stopped
     environment:
