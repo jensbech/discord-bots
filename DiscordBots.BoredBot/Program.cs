@@ -1,4 +1,3 @@
-using DiscordBots.BoredBot;
 using DiscordBots.Core;
 using Microsoft.Extensions.Hosting;
 
@@ -10,11 +9,10 @@ public static class Program
     {
         using var host = DiscordBotHostingExtensions.CreateDiscordBotHost<BoredBot>(
             args,
-            BoredBot.GetInstanceAsync,
+            (envVars, commands, logger) => BoredBot.GetInstanceAsync(envVars, commands, logger),
             BoredBotCommands.Commands,
             "Bored Bot"
         );
-
         await host.RunAsync();
     }
 }

@@ -9,7 +9,7 @@ public static class DiscordBotHostingExtensions
 {
     public static IHostApplicationBuilder AddDiscordBot<TBot>(
         this IHostApplicationBuilder builder,
-        Func<BotEnvironmentVariables, SlashCommandBuilder[], Task<TBot>> botFactory,
+        Func<BotEnvironmentVariables, SlashCommandBuilder[], ILogger<TBot>, Task<TBot>> botFactory,
         SlashCommandBuilder[] commands,
         string botName
     )
@@ -25,7 +25,7 @@ public static class DiscordBotHostingExtensions
 
     public static IHost CreateDiscordBotHost<TBot>(
         string[] args,
-        Func<BotEnvironmentVariables, SlashCommandBuilder[], Task<TBot>> botFactory,
+        Func<BotEnvironmentVariables, SlashCommandBuilder[], ILogger<TBot>, Task<TBot>> botFactory,
         SlashCommandBuilder[] commands,
         string botName
     )

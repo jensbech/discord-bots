@@ -2,6 +2,37 @@ namespace DiscordBots.BoredBot.Dice
 {
     public class Roller
     {
+        /// <summary>
+        /// Attempts to process a roll command. Returns true on success and sets resultMessage to the formatted
+        /// roll outcome. Returns false on parse/validation failure and sets resultMessage to a user friendly error.
+        /// </summary>
+        public static bool TryHandleRollCommand(string textInput, out string resultMessage)
+        {
+            resultMessage = string.Empty;
+            if (!InputParser.Parse(textInput, out var parsedUserInput, out var parseError))
+            {
+                resultMessage = parseError ?? "Unknown dice parsing error.";
+                return false;
+            }
+
+            var diceRolls = new List<(int sides, int result, string? message)>();
+            var sumOfAllRolls = 0;
+
+            foreach (var sides in parsedUserInput.Dices)
+            {
+                var (rollResult, rollResultMessage) = Roll(sides);
+                diceRolls.Add((sides, rollResult, rollResultMessage));
+                sumOfAllRolls += rollResult;
+            }
+
+            resultMessage = ConstructRollOutcomeMessageLines(
+                diceRolls,
+                sumOfAllRolls,
+                parsedUserInput.Modifier
+            );
+            return true;
+        }
+
         public static string HandleRollCommand(string textInput)
         {
             if (!InputParser.Parse(textInput, out var parsedUserInput, out var parseError))

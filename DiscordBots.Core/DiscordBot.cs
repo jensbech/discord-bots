@@ -1,5 +1,7 @@
 using Discord;
 using Discord.WebSocket;
+using DiscordBots.Core.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.Core
 {
@@ -9,8 +11,14 @@ namespace DiscordBots.Core
         private readonly string _applicationId;
         protected readonly DiscordSocketClient _client;
         private readonly SlashCommandBuilder[] _commands;
+        protected readonly ILogger _logger;
 
-        protected DiscordBot(string token, string applicationId, SlashCommandBuilder[] commands)
+        protected DiscordBot(
+            string token,
+            string applicationId,
+            SlashCommandBuilder[] commands,
+            ILogger logger
+        )
         {
             _client = new DiscordSocketClient(
                 new DiscordSocketConfig
@@ -24,6 +32,8 @@ namespace DiscordBots.Core
             _token = token;
             _applicationId = applicationId;
             _commands = commands;
+            _logger = logger;
+            _client.MessageReceived += LogIncomingMessage;
         }
 
         private async Task LoginAsync()
@@ -50,7 +60,10 @@ namespace DiscordBots.Core
             {
                 var commandData = _commands.Select(cmd => cmd.Build()).ToArray();
                 await _client.Rest.BulkOverwriteGlobalCommands(commandData);
-                Console.WriteLine($"Registered {commandData.Length} global slash command(s).");
+                _logger.LogInformation(
+                    "Registered {CommandCount} global slash command(s)",
+                    commandData.Length
+                );
             }
             catch (Exception error)
             {
@@ -60,9 +73,20 @@ namespace DiscordBots.Core
             }
         }
 
+        private Task LogIncomingMessage(SocketMessage message)
+        {
+            // Skip logging bot messages to avoid noise
+            if (message.Author.IsBot)
+                return Task.CompletedTask;
+
+            _logger.LogIncomingUserMessage(message);
+
+            return Task.CompletedTask;
+        }
+
         protected async Task InitializeAsync(string botName)
         {
-            Console.WriteLine($"Initializing bot '{botName}'...");
+            _logger.LogInformation("Initializing bot '{BotName}'...", botName);
             try
             {
                 await LoginAsync();
@@ -72,17 +96,21 @@ namespace DiscordBots.Core
                     try
                     {
                         await RegisterCommandsAsync();
-                        Console.WriteLine($"{botName} is ready!");
+                        _logger.LogInformation("{BotName} is ready!", botName);
                     }
                     catch (Exception inner)
                     {
-                        Console.WriteLine($"Initialization error (post-ready): {inner.Message}");
+                        _logger.LogError(
+                            inner,
+                            "Initialization error (post-ready) for {BotName}",
+                            botName
+                        );
                     }
                 };
             }
             catch (Exception error)
             {
-                Console.WriteLine($"Initialization error: {error.Message}");
+                _logger.LogError(error, "Initialization error for {BotName}", botName);
             }
         }
 

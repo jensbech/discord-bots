@@ -6,15 +6,21 @@ namespace DiscordBots.Core;
 
 public class DiscordBotService<TBot>(
     ILogger<DiscordBotService<TBot>> logger,
-    Func<BotEnvironmentVariables, SlashCommandBuilder[], Task<TBot>> botFactory,
+    ILogger<TBot> botLogger,
+    Func<BotEnvironmentVariables, SlashCommandBuilder[], ILogger<TBot>, Task<TBot>> botFactory,
     SlashCommandBuilder[] commands,
     string botName
 ) : BackgroundService
     where TBot : DiscordBot
 {
     private readonly ILogger<DiscordBotService<TBot>> _logger = logger;
-    private readonly Func<BotEnvironmentVariables, SlashCommandBuilder[], Task<TBot>> _botFactory =
-        botFactory;
+    private readonly ILogger<TBot> _botLogger = botLogger;
+    private readonly Func<
+        BotEnvironmentVariables,
+        SlashCommandBuilder[],
+        ILogger<TBot>,
+        Task<TBot>
+    > _botFactory = botFactory;
     private readonly SlashCommandBuilder[] _commands = commands;
     private readonly string _botName = botName;
 
@@ -25,7 +31,7 @@ public class DiscordBotService<TBot>(
             _logger.LogInformation("Starting {BotName} service...", _botName);
 
             var environmentVariables = DiscordBot.EnsureEnvironmentVariables();
-            await _botFactory(environmentVariables, _commands);
+            await _botFactory(environmentVariables, _commands, _botLogger);
 
             _logger.LogInformation("{BotName} service started successfully", _botName);
 
