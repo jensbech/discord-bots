@@ -3,11 +3,11 @@ namespace DiscordBots.Core
     public enum Command
     {
         Roll,
-        Help
+        Help,
     }
 
     public enum MessageContent
     {
-        Input
+        Input,
     }
 }

@@ -50,6 +50,7 @@ namespace DiscordBots.Core
             {
                 var commandData = _commands.Select(cmd => cmd.Build()).ToArray();
                 await _client.Rest.BulkOverwriteGlobalCommands(commandData);
+                Console.WriteLine($"Registered {commandData.Length} global slash command(s).");
             }
             catch (Exception error)
             {
@@ -65,8 +66,19 @@ namespace DiscordBots.Core
             try
             {
                 await LoginAsync();
-                await RegisterCommandsAsync();
-                Console.WriteLine($"{botName} is ready!");
+
+                _client.Ready += async () =>
+                {
+                    try
+                    {
+                        await RegisterCommandsAsync();
+                        Console.WriteLine($"{botName} is ready!");
+                    }
+                    catch (Exception inner)
+                    {
+                        Console.WriteLine($"Initialization error (post-ready): {inner.Message}");
+                    }
+                };
             }
             catch (Exception error)
             {

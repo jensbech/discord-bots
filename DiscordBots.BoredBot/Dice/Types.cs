@@ -1,4 +1,4 @@
-namespace DiscordBots.BoredBot.DiceRoller
+namespace DiscordBots.BoredBot.Dice
 {
     public static class Dice
     {
