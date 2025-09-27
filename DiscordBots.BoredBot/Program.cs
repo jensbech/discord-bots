@@ -1,6 +1,5 @@
 using DiscordBots.BoredBot;
 using DiscordBots.Core;
 
-await BoredBot.GetInstanceAsync(
-    DiscordBot.EnsureEnvironmentVariables(),
-    BoredBotCommands.Commands);
+var environmentVariables = DiscordBot.EnsureEnvironmentVariables();
+_ = await BoredBot.GetInstanceAsync(environmentVariables, BoredBotCommands.Commands);
