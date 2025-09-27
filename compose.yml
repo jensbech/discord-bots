@@ -4,8 +4,8 @@ services:
     container_name: discord-bored-bot
     restart: unless-stopped
     environment:
-      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
-      - APPLICATION_ID=${APPLICATION_ID}
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:?DISCORD_BOT_TOKEN is required but not set}
+      - APPLICATION_ID=${APPLICATION_ID:?APPLICATION_ID is required but not set}
 
       - Logging__LogLevel__Default=Information
       - Logging__LogLevel__Microsoft=Warning
