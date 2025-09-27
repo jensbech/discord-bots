@@ -69,10 +69,9 @@ namespace DiscordBots.Core
 
         public static void VerifyEnvironmentVariables(List<string> environmentVariableNames)
         {
-            var missingVariables = environmentVariableNames.Where(var => Environment.GetEnvironmentVariable(var) == null).ToList();
-
-            if (missingVariables.Count > 0)
-                throw new Exception($"Missing environment variables: {string.Join(", ", missingVariables)}");
+            var missing = environmentVariableNames.Where(var => Environment.GetEnvironmentVariable(var) == null).ToList();
+            if (missing.Count > 0)
+                throw new Exception($"Missing environment variables: {string.Join(", ", missing)}");
         }
     }
 }
