@@ -1,5 +1,4 @@
 using Discord;
-using Discord.WebSocket;
 using DiscordBots.BoredBot.DiceRoller.Utils;
 using DiscordBots.Core;
 
@@ -9,13 +8,16 @@ namespace DiscordBots.BoredBot
     {
         private static BoredBot? _instance;
 
-        private BoredBot(string token, string applicationId, SlashCommandBuilder[] commands) 
+        private BoredBot(string token, string applicationId, SlashCommandBuilder[] commands)
             : base(token, applicationId, commands)
         {
             UseCommand();
         }
 
-        public static async Task<BoredBot> GetInstanceAsync(BotEnvironmentVariables envVars, SlashCommandBuilder[] commands)
+        public static async Task<BoredBot> GetInstanceAsync(
+            BotEnvironmentVariables envVars,
+            SlashCommandBuilder[] commands
+        )
         {
             if (_instance == null)
             {
@@ -27,63 +29,87 @@ namespace DiscordBots.BoredBot
 
         private void UseCommand()
         {
-            _client.SlashCommandExecuted += async (SocketSlashCommand interaction) =>
+            _client.SlashCommandExecuted += static async interaction =>
             {
                 var commandName = interaction.CommandName;
-                var userName = interaction.User.GlobalName ?? interaction.User.Username;
-                var userInput = interaction.Data.Options?.FirstOrDefault()?.Value?.ToString();
+                // var discordUserName = interaction.User.GlobalName ?? interaction.User.Username;
+                var textInput = interaction.Data.Options?.FirstOrDefault()?.Value?.ToString();
 
-                if (string.IsNullOrEmpty(userInput))
+                if (string.IsNullOrEmpty(textInput))
                     throw new InvalidOperationException("Expected input to be defined");
 
                 switch (commandName)
                 {
                     case "roll":
-                        await interaction.RespondAsync(await HandleRollCommand(userInput, userName));
+                        {
+                            string resultMessage = HandleRollCommand(textInput);
+                            await interaction.RespondAsync(resultMessage);
+                        }
                         break;
                 }
             };
         }
 
-        private static async Task<string> HandleRollCommand(string userInput, string username)
+        private static string HandleRollCommand(string textInput)
         {
-            if (!ParseDiceUserInput.TryParse(userInput, out var parsed, out var parseError))
-                return parseError!;
-
-            var roller = new DiceRoller.DiceRoller(username);
-            var lines = new List<string>();
-            var rolls = new List<(int sides, int result, string? message)>();
-            var total = 0;
-
-            foreach (var sides in parsed.Dices)
+            if (
+                !ParseDiceUserInput.TryParseUserInput(
+                    textInput,
+                    out var parsedUserInput,
+                    out var parseError
+                )
+            )
             {
-                var (value, msg) = await DiceRoller.DiceRoller.Roll(sides);
-                rolls.Add((sides, value, string.IsNullOrWhiteSpace(msg) ? null : msg));
-                total += value;
+                return parseError ?? throw new Exception("Dice parsing error is null");
+            }
+            var diceRolls = new List<(int sides, int result, string? message)>();
+            var sumOfAllRolls = 0;
+
+            foreach (var sides in parsedUserInput.Dices)
+            {
+                var (rollResult, rollResultMessage) = DiceRoller.DiceRoller.Roll(sides);
+                diceRolls.Add((sides, rollResult, rollResultMessage));
+                sumOfAllRolls += rollResult;
             }
 
-            for (int i = 0; i < rolls.Count; i++)
+            return ConstructRollOutcomeMessageLines(
+                diceRolls,
+                sumOfAllRolls,
+                parsedUserInput.Modifier
+            );
+        }
+
+        private static string ConstructRollOutcomeMessageLines(
+            IReadOnlyList<(int sides, int result, string? message)> diceRolls,
+            int sumOfAllRolls,
+            int rollModifier
+        )
+        {
+            var diceRollResultLines = new List<string>();
+
+            for (int i = 0; i < diceRolls.Count; i++)
             {
-                var (sides, value, msg) = rolls[i];
-                var prefix = rolls.Count == 1 ? string.Empty : $"Roll #{i + 1}: ";
+                var (sides, value, msg) = diceRolls[i];
+                var prefix = diceRolls.Count == 1 ? string.Empty : $"Roll #{i + 1}: ";
                 var line = $"{prefix}(d{sides}) => {value}";
-                if (msg != null) line += $" **{msg}**";
-                lines.Add(line);
+                if (!string.IsNullOrWhiteSpace(msg))
+                    line += $" **{msg}**";
+                diceRollResultLines.Add(line);
             }
 
-            var mod = parsed.Mod;
-            if (rolls.Count > 1 || mod != 0)
+            if (diceRolls.Count > 1 || rollModifier != 0)
             {
-                var final = total + mod;
-                if (mod != 0)
+                var finalSumWithModifier = sumOfAllRolls + rollModifier;
+
+                if (rollModifier != 0)
                 {
-                    var sign = mod > 0 ? "+" : "-";
-                    lines.Add($"Modifier: {sign}{Math.Abs(mod)}");
+                    var sign = rollModifier > 0 ? "+" : "-";
+                    diceRollResultLines.Add($"Modifier: {sign}{Math.Abs(rollModifier)}");
                 }
-                lines.Add($"Total: {final}");
+                diceRollResultLines.Add($"Total: {finalSumWithModifier}");
             }
 
-            return string.Join("\n", lines);
+            return string.Join("\n", diceRollResultLines);
         }
     }
 }

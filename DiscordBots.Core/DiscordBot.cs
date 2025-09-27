@@ -12,10 +12,15 @@ namespace DiscordBots.Core
 
         protected DiscordBot(string token, string applicationId, SlashCommandBuilder[] commands)
         {
-            _client = new DiscordSocketClient(new DiscordSocketConfig
-            {
-                GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.MessageContent
-            });
+            _client = new DiscordSocketClient(
+                new DiscordSocketConfig
+                {
+                    GatewayIntents =
+                        GatewayIntents.Guilds
+                        | GatewayIntents.GuildMessages
+                        | GatewayIntents.MessageContent,
+                }
+            );
             _token = token;
             _applicationId = applicationId;
             _commands = commands;
@@ -24,9 +29,9 @@ namespace DiscordBots.Core
         private async Task LoginAsync()
         {
             if (string.IsNullOrEmpty(_token))
-            {
-                throw new InvalidOperationException("No token provided when attempting to log in bot");
-            }
+                throw new InvalidOperationException(
+                    "No token provided when attempting to log in bot"
+                );
 
             try
             {
@@ -48,7 +53,9 @@ namespace DiscordBots.Core
             }
             catch (Exception error)
             {
-                throw new InvalidOperationException($"Failed to register slash commands: {error.Message}");
+                throw new InvalidOperationException(
+                    $"Failed to register slash commands: {error.Message}"
+                );
             }
         }
 
@@ -70,14 +77,17 @@ namespace DiscordBots.Core
         public static BotEnvironmentVariables EnsureEnvironmentVariables()
         {
             string[] requiredVars = ["DISCORD_BOT_TOKEN", "APPLICATION_ID"];
-            var missing = requiredVars.Where(name => Environment.GetEnvironmentVariable(name) is null);
+            var missing = requiredVars.Where(name =>
+                Environment.GetEnvironmentVariable(name) is null
+            );
 
             if (missing.Any())
                 throw new Exception($"Missing environment variables: {string.Join(", ", missing)}");
 
             return new BotEnvironmentVariables(
-                Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN")!,
-                Environment.GetEnvironmentVariable("APPLICATION_ID")!);
+                Environment.GetEnvironmentVariable(requiredVars[0])!,
+                Environment.GetEnvironmentVariable(requiredVars[1])!
+            );
         }
     }
 

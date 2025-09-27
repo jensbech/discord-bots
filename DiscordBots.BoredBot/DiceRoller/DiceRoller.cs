@@ -4,45 +4,53 @@ namespace DiscordBots.BoredBot.DiceRoller
     {
         private readonly string _username = username;
 
-        public static async Task<(int RollResult, string? Message)> Roll(int sentDice)
+        public static (int RollResult, string? Message) Roll(int diceInput)
         {
-            var allowedDice = new[] { Dice.Four, Dice.Six, Dice.Ten, Dice.Twelve, Dice.Twenty, Dice.Hundred };
+            var allowedDice = new[]
+            {
+                Dice.Four,
+                Dice.Six,
+                Dice.Ten,
+                Dice.Twelve,
+                Dice.Twenty,
+                Dice.Hundred,
+            };
 
-            if (!allowedDice.Contains(sentDice))
-                throw new ArgumentException($"Invalid dice type: {sentDice}");
+            if (!allowedDice.Contains(diceInput))
+                throw new ArgumentException($"Invalid dice type: {diceInput}");
 
-            var (outcome, crit) = GetSingleDiceRollOutcome(sentDice);
+            var (outcome, crit) = GetSingleDiceRollOutcome(diceInput);
 
             if (crit.Failure || crit.Success)
             {
-                return (outcome, crit.Success
-                    ? await HandleCritical(Critical.Success)
-                    : await HandleCritical(Critical.Fail));
+                return (
+                    outcome,
+                    crit.Success ? HandleCritical(Critical.Success) : HandleCritical(Critical.Fail)
+                );
             }
-
             return (outcome, null);
         }
 
-        private static (int Outcome, (bool Failure, bool Success) Crit) GetSingleDiceRollOutcome(int dice)
+        private static (int Outcome, (bool Failure, bool Success) Crit) GetSingleDiceRollOutcome(
+            int dice
+        )
         {
-            var random = new Random();
-            var roll = random.Next(1, dice + 1);
+            int rollResult = new Random().Next(1, dice + 1);
 
             return dice switch
             {
-                Dice.Twenty => (roll, (roll == 1, roll == 20)),
-                _ => (roll, (false, false))
+                Dice.Twenty => (rollResult, (rollResult == 1, rollResult == 20)),
+                _ => (rollResult, (false, false)),
             };
         }
 
-        private static async Task<string> HandleCritical(Critical critical)
+        private static string HandleCritical(Critical critical)
         {
-            await Task.Delay(0);
             return critical switch
             {
                 Critical.Fail => "Critical FAIL!",
                 Critical.Success => "Critical SUCCESS!",
-                _ => string.Empty
+                _ => string.Empty,
             };
         }
     }

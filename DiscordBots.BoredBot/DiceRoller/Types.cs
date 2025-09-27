@@ -13,12 +13,12 @@ namespace DiscordBots.BoredBot.DiceRoller
     public enum Critical
     {
         Fail,
-        Success
+        Success,
     }
 
     public class DiceParseResult
     {
         public List<int> Dices { get; set; } = [];
-        public int Mod { get; set; }
+        public int Modifier { get; set; }
     }
 }
