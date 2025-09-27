@@ -116,7 +116,7 @@ namespace DiscordBots.Core
             {
                 _logger.LogError(
                     ex,
-                    "Unhandled exception in slash command handler for /{Command}",
+                    "Unnhandled exception in slash command handler for /{Command}",
                     command.CommandName
                 );
 
