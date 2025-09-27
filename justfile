@@ -1,9 +1,9 @@
 _default:
     @just --list
 
-publish IMAGE='jensbech/bored-bot':
+publish:
     chmod +x ./scripts/build_and_publish.sh
-    ./scripts/build_and_publish.sh {{IMAGE}}
+    ./scripts/build_and_publish.sh
 
 run:
     cd DiscordBots.BoredBot && dotnet run
