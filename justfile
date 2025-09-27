@@ -8,6 +8,9 @@ publish:
 run:
     cd DiscordBots.BoredBot && dotnet run
 
+host:
+    docker compose up
+
 build:
     dotnet build
 
