@@ -1,5 +1,8 @@
 _default:
     @just --list
 
-dev:
+bored-dev:
     cd DiscordBots.BoredBot && dotnet run
+
+build:
+    dotnet build

@@ -29,13 +29,10 @@ public class DiscordBotService<TBot>(
         try
         {
             _logger.LogInformation("Starting {BotName} service...", _botName);
-
             var environmentVariables = DiscordBot.EnsureEnvironmentVariables();
             await _botFactory(environmentVariables, _commands, _botLogger);
-
             _logger.LogInformation("{BotName} service started successfully", _botName);
-
-            await Task.Delay(Timeout.Infinite, stoppingToken);
+            _ = Task.Delay(Timeout.Infinite, stoppingToken);
         }
         catch (OperationCanceledException)
         {

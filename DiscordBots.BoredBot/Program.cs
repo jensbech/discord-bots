@@ -7,9 +7,9 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        using var host = DiscordBotHostingExtensions.CreateDiscordBotHost<BoredBot>(
+        using var host = DiscordBotHostingExtensions.DiscordBotBuilder<BoredBot>(
             args,
-            (envVars, commands, logger) => BoredBot.GetInstanceAsync(envVars, commands, logger),
+            BoredBot.GetOrCreateInstance,
             BoredBotCommands.Commands,
             "Bored Bot"
         );

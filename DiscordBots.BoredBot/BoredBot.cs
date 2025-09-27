@@ -11,18 +11,13 @@ namespace DiscordBots.BoredBot
     {
         private static BoredBot? _instance;
 
-        private BoredBot(
-            string token,
-            string applicationId,
-            SlashCommandBuilder[] commands,
-            ILogger<BoredBot> logger
-        )
-            : base(token, applicationId, commands, logger)
+        private BoredBot(string token, SlashCommandBuilder[] commands, ILogger<BoredBot> logger)
+            : base(token, commands, logger)
         {
             UseCommand();
         }
 
-        public static async Task<BoredBot> GetInstanceAsync(
+        public static async Task<BoredBot> GetOrCreateInstance(
             BotEnvironmentVariables envVars,
             SlashCommandBuilder[] commands,
             ILogger<BoredBot> logger
@@ -30,12 +25,7 @@ namespace DiscordBots.BoredBot
         {
             if (_instance == null)
             {
-                _instance = new BoredBot(
-                    envVars.DiscordBotToken,
-                    envVars.ApplicationId,
-                    commands,
-                    logger
-                );
+                _instance = new BoredBot(envVars.DiscordBotToken, commands, logger);
                 await _instance.InitializeAsync("Bored Bot");
             }
             return _instance;

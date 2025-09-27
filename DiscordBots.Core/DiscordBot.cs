@@ -8,17 +8,11 @@ namespace DiscordBots.Core
     public abstract class DiscordBot
     {
         private readonly string _token;
-        private readonly string _applicationId;
         protected readonly DiscordSocketClient _client;
         private readonly SlashCommandBuilder[] _commands;
         protected readonly ILogger _logger;
 
-        protected DiscordBot(
-            string token,
-            string applicationId,
-            SlashCommandBuilder[] commands,
-            ILogger logger
-        )
+        protected DiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
         {
             _client = new DiscordSocketClient(
                 new DiscordSocketConfig
@@ -30,7 +24,6 @@ namespace DiscordBots.Core
                 }
             );
             _token = token;
-            _applicationId = applicationId;
             _commands = commands;
             _logger = logger;
             _client.MessageReceived += LogIncomingMessage;
@@ -75,12 +68,9 @@ namespace DiscordBots.Core
 
         private Task LogIncomingMessage(SocketMessage message)
         {
-            // Skip logging bot messages to avoid noise
             if (message.Author.IsBot)
                 return Task.CompletedTask;
-
             _logger.LogIncomingUserMessage(message);
-
             return Task.CompletedTask;
         }
 
@@ -96,7 +86,7 @@ namespace DiscordBots.Core
                     try
                     {
                         await RegisterCommandsAsync();
-                        _logger.LogInformation("{BotName} is ready!", botName);
+                        _logger.LogInformation("{BotName} is ready! :)", botName);
                     }
                     catch (Exception inner)
                     {
