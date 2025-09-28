@@ -1,5 +1,6 @@
 using Discord;
 using Discord.WebSocket;
+using DiscordBots.BookStack;
 using DiscordBots.BoredBot.Dice;
 using DiscordBots.Core;
 using DiscordBots.Core.Logging;
@@ -27,6 +28,12 @@ namespace DiscordBots.BoredBot
             }
             return _instance;
         }
+
+        public static BoredBot? Instance => _instance;
+
+        private IBookStackClient? _bookStack;
+
+        public void SetBookStackClient(IBookStackClient client) => _bookStack = client;
 
         protected override async Task OnSlashCommandAsync(SocketSlashCommand command)
         {
@@ -56,6 +63,56 @@ namespace DiscordBots.BoredBot
                     }
                     break;
                 }
+                case "search":
+                {
+                    var query = GetStringOption(command, "query");
+                    if (string.IsNullOrWhiteSpace(query))
+                    {
+                        await command.RespondAsync("Query required for /search.", ephemeral: true);
+                        _logger.LogSlashError(command, "Missing query");
+                        break;
+                    }
+                    if (_bookStack is null)
+                    {
+                        await command.RespondAsync("Search service not ready.", ephemeral: true);
+                        _logger.LogSlashError(command, "BookStack client not set");
+                        break;
+                    }
+                    await command.DeferAsync();
+                    var result = await _bookStack!.SearchAsync(query, count: 5);
+                    if (result == null || result.Data.Count == 0)
+                    {
+                        await command.FollowupAsync($"No results for '{query}'.");
+                        _logger.LogSlash(command, "0 results");
+                        break;
+                    }
+                    var embeds = new List<EmbedBuilder>();
+                    foreach (var item in result.Data.Take(5))
+                    {
+                        var eb = new EmbedBuilder()
+                            .WithTitle(item.Name)
+                            .WithUrl(item.Url)
+                            .WithColor(new Color(0, 128, 128));
+                        var preview = item.Preview_Html.Content;
+                        if (!string.IsNullOrWhiteSpace(preview))
+                        {
+                            var cleaned = CleanPreview(preview);
+                            if (!string.IsNullOrWhiteSpace(cleaned))
+                                eb.WithDescription(
+                                    cleaned.Length > 500 ? cleaned[..500] + "…" : cleaned
+                                );
+                        }
+                        embeds.Add(eb);
+                    }
+                    await command.FollowupAsync(
+                        embeds: embeds.Select(e => e.Build()).ToArray(),
+                        text: result.Total > 5
+                            ? $"Showing {embeds.Count} of {result.Total} results"
+                            : null
+                    );
+                    _logger.LogSlash(command, $"Returned {embeds.Count}/{result.Total}");
+                    break;
+                }
                 case "help":
                 {
                     await command.RespondAsync("Available commands: /roll, /help");
@@ -69,6 +126,31 @@ namespace DiscordBots.BoredBot
                     break;
                 }
             }
+        }
+
+        private static string CleanPreview(string preview)
+        {
+            if (string.IsNullOrWhiteSpace(preview))
+                return string.Empty;
+            // Basic replacements similar to python version
+            var cleaned = preview
+                .Replace("<strong>", "**", StringComparison.OrdinalIgnoreCase)
+                .Replace("</strong>", "**", StringComparison.OrdinalIgnoreCase)
+                .Replace("<u>", "__", StringComparison.OrdinalIgnoreCase)
+                .Replace("</u>", "__", StringComparison.OrdinalIgnoreCase);
+            // Strip <img ...>
+            cleaned = System.Text.RegularExpressions.Regex.Replace(
+                cleaned,
+                "<img[^>]*>",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase
+            );
+            // Remove html tags that remain (very light sanitizer)
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "<[^>]+>", "");
+            // Collapse whitespace
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "\n{2,}", "\n");
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "\\s+\\n", "\n");
+            return cleaned.Trim();
         }
     }
 }

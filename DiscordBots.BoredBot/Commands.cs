@@ -16,6 +16,15 @@ namespace DiscordBots.BoredBot
                         isRequired: true
                     ),
                 new SlashCommandBuilder()
+                    .WithName("search")
+                    .WithDescription("Search the BookStack knowledge base")
+                    .AddOption(
+                        name: "query",
+                        type: ApplicationCommandOptionType.String,
+                        description: "Words to search for",
+                        isRequired: true
+                    ),
+                new SlashCommandBuilder()
                     .WithName("help")
                     .WithDescription("Displays a list of available commands."),
             ];

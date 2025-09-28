@@ -1,0 +1,58 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace DiscordBots.BookStack
+{
+    public static class ServiceCollectionExtensions
+    {
+        public static IServiceCollection AddBookStack(
+            this IServiceCollection services,
+            IConfiguration config
+        )
+        {
+            string? GetEnvironmentValue(string keySuffix, string envVar)
+            {
+                var value = config[$"{BookStackOptions.SectionName}:{keySuffix}"];
+                return string.IsNullOrWhiteSpace(value)
+                    ? Environment.GetEnvironmentVariable(envVar)
+                    : value;
+            }
+
+            var baseUrl =
+                GetEnvironmentValue("BaseUrl", "BOOKSTACK_BASE_URL")
+                ?? throw new InvalidOperationException(
+                    "BOOKSTACK_BASE_URL / BookStack:BaseUrl is required"
+                );
+            var apiId =
+                GetEnvironmentValue("ApiId", "BOOKSTACK_API_ID")
+                ?? throw new InvalidOperationException(
+                    "BOOKSTACK_API_ID / BookStack:ApiId is required"
+                );
+            var apiKey =
+                GetEnvironmentValue("ApiKey", "BOOKSTACK_API_KEY")
+                ?? throw new InvalidOperationException(
+                    "BOOKSTACK_API_KEY / BookStack:ApiKey is required"
+                );
+            var guildId = GetEnvironmentValue("GuildId", "BOOKSTACK_GUILD_ID");
+
+            services.AddSingleton(
+                new BookStackOptions
+                {
+                    BaseUrl = baseUrl,
+                    ApiId = apiId,
+                    ApiKey = apiKey,
+                    GuildId = guildId,
+                }
+            );
+
+            services.AddHttpClient<IBookStackClient, BookStackClient>(client =>
+            {
+                client.BaseAddress = new Uri(baseUrl);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Add("User-Agent", "DiscordBots/BookStackClient");
+            });
+
+            return services;
+        }
+    }
+}
