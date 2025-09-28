@@ -13,12 +13,11 @@ public static class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Logging.AddConsole();
+        builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
-        // Add BookStack (expects configuration section 'BookStack')
         builder.Services.AddBookStack(builder.Configuration);
-        // Add OpenAI (expects OPENAI_API_KEY env var)
         builder.Services.AddOpenAI(builder.Configuration);
-        builder.Services.AddHostedService<ServiceBotInitializer>();
+        builder.Services.AddHostedService<ServiceInitializer>();
 
         builder.AddDiscordBot<BoredBot>(
             BoredBot.GetOrCreateInstance,

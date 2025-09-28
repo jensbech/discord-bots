@@ -6,22 +6,15 @@ using Microsoft.Extensions.Options;
 
 namespace DiscordBots.OpenAI;
 
-internal sealed class OpenAIClient : IOpenAIClient
+internal sealed class OpenAIClient(
+    HttpClient http,
+    IOptions<OpenAIOptions> options,
+    ILogger<OpenAIClient> logger
+) : IOpenAIClient
 {
-    private readonly HttpClient _http;
-    private readonly OpenAIOptions _options;
-    private readonly ILogger<OpenAIClient> _logger;
-
-    public OpenAIClient(
-        HttpClient http,
-        IOptions<OpenAIOptions> options,
-        ILogger<OpenAIClient> logger
-    )
-    {
-        _http = http;
-        _options = options.Value;
-        _logger = logger;
-    }
+    private readonly HttpClient _http = http;
+    private readonly OpenAIOptions _options = options.Value;
+    private readonly ILogger<OpenAIClient> _logger = logger;
 
     public async Task<string?> ChatAsync(string question, CancellationToken ct = default)
     {

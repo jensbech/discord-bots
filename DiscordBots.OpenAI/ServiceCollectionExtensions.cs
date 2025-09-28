@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         var apiKey =
             Get("ApiKey", "OPENAI_API_KEY")
             ?? throw new InvalidOperationException("OPENAI_API_KEY / OpenAI:ApiKey is required");
+
         var model = Get("Model", "OPENAI_MODEL") ?? "gpt-3.5-turbo";
         var baseUrl = Get("BaseUrl", "OPENAI_BASE_URL") ?? "https://api.openai.com";
         var maxTokens = int.TryParse(Get("MaxTokens", "OPENAI_MAX_TOKENS"), out var mt) ? mt : 1000;

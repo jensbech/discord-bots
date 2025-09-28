@@ -109,7 +109,7 @@ namespace DiscordBots.BoredBot
                         embeds.Add(eb);
                     }
                     await command.FollowupAsync(
-                        embeds: embeds.Select(e => e.Build()).ToArray(),
+                        embeds: [.. embeds.Select(e => e.Build())],
                         text: result.Total > 5
                             ? $"Showing {embeds.Count} of {result.Total} results"
                             : null

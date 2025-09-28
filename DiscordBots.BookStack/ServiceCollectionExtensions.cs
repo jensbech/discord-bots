@@ -35,21 +35,27 @@ namespace DiscordBots.BookStack
                 );
             var guildId = GetEnvironmentValue("GuildId", "BOOKSTACK_GUILD_ID");
 
-            services.AddSingleton(
-                new BookStackOptions
-                {
-                    BaseUrl = baseUrl,
-                    ApiId = apiId,
-                    ApiKey = apiKey,
-                    GuildId = guildId,
-                }
-            );
+            var trimmed = baseUrl.TrimEnd('/');
+            if (!trimmed.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
+            {
+                trimmed += "/api";
+            }
+            var normalizedBaseUrl = trimmed + "/";
+
+            services.Configure<BookStackOptions>(o =>
+            {
+                o.BaseUrl = normalizedBaseUrl;
+                o.ApiId = apiId;
+                o.ApiKey = apiKey;
+                o.GuildId = guildId;
+            });
 
             services.AddHttpClient<IBookStackClient, BookStackClient>(client =>
             {
-                client.BaseAddress = new Uri(baseUrl);
+                client.BaseAddress = new Uri(normalizedBaseUrl);
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Add("User-Agent", "DiscordBots/BookStackClient");
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
             });
 
             return services;

@@ -11,6 +11,10 @@ namespace DiscordBots.BookStack
         private readonly HttpClient _http;
         private readonly BookStackOptions _options;
         private readonly ILogger<BookStackClient> _logger;
+        private static readonly System.Text.Json.JsonSerializerOptions s_jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+        };
 
         public BookStackClient(
             HttpClient http,
@@ -21,6 +25,12 @@ namespace DiscordBots.BookStack
             _http = http;
             _options = options.Value;
             _logger = logger;
+
+            _logger.LogDebug(
+                "BookStackClient initialized with BaseUrl: {BaseUrl}, HttpClient BaseAddress: {BaseAddress}",
+                string.IsNullOrWhiteSpace(_options.BaseUrl) ? "<empty>" : _options.BaseUrl,
+                _http.BaseAddress
+            );
         }
 
         public async Task<BookStackSearchResponse?> SearchAsync(
@@ -32,19 +42,27 @@ namespace DiscordBots.BookStack
         {
             if (string.IsNullOrWhiteSpace(query))
                 return null;
-            var builder = new UriBuilder(new Uri(new Uri(_options.BaseUrl), "search"));
+
             var q = HttpUtility.ParseQueryString(string.Empty);
             q["query"] = query;
             q["page"] = page.ToString();
             q["count"] = count.ToString();
-            builder.Query = q.ToString();
-            var url = builder.Uri;
+            var url = $"search?{q}";
+
+            _logger.LogDebug("Making request to: {Url}", url);
 
             try
             {
                 using var req = new HttpRequestMessage(HttpMethod.Get, url);
                 req.Headers.Add("Authorization", $"Token {_options.ApiId}:{_options.ApiKey}");
                 var resp = await _http.SendAsync(req, ct);
+
+                _logger.LogDebug(
+                    "Response status: {Status}, RequestUri: {Uri}",
+                    resp.StatusCode,
+                    resp.RequestMessage?.RequestUri
+                );
+
                 if (!resp.IsSuccessStatusCode)
                 {
                     _logger.LogWarning(
@@ -54,8 +72,35 @@ namespace DiscordBots.BookStack
                     );
                     return null;
                 }
-                var result = await resp.Content.ReadFromJsonAsync<BookStackSearchResponse>(
-                    cancellationToken: ct
+
+                var responseContent = await resp.Content.ReadAsStringAsync(ct);
+                _logger.LogDebug(
+                    "BookStack API Response (first 200 chars): {Content}",
+                    responseContent[..Math.Min(200, responseContent.Length)]
+                );
+
+                if (string.IsNullOrWhiteSpace(responseContent))
+                {
+                    _logger.LogWarning(
+                        "BookStack API returned empty response for query '{Query}'",
+                        query
+                    );
+                    return null;
+                }
+
+                if (responseContent[0] == '<')
+                {
+                    _logger.LogWarning(
+                        "BookStack API did not return JSON for query '{Query}'. Likely incorrect base URL or authentication; first 100 chars: {Snippet}",
+                        query,
+                        responseContent.Substring(0, Math.Min(100, responseContent.Length))
+                    );
+                    return null;
+                }
+
+                var result = System.Text.Json.JsonSerializer.Deserialize<BookStackSearchResponse>(
+                    responseContent,
+                    s_jsonOptions
                 );
                 return result;
             }
