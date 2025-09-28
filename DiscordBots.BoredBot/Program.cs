@@ -1,5 +1,6 @@
 using DiscordBots.BookStack;
 using DiscordBots.Core;
+using DiscordBots.OpenAI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -12,10 +13,13 @@ public static class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Logging.AddConsole();
+
         // Add BookStack (expects configuration section 'BookStack')
         builder.Services.AddBookStack(builder.Configuration);
-        builder.Services.AddHostedService<BookStackBotInitializer>();
-        // Add Discord bot
+        // Add OpenAI (expects OPENAI_API_KEY env var)
+        builder.Services.AddOpenAI(builder.Configuration);
+        builder.Services.AddHostedService<ServiceBotInitializer>();
+
         builder.AddDiscordBot<BoredBot>(
             BoredBot.GetOrCreateInstance,
             BoredBotCommands.Commands,

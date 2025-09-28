@@ -5,15 +5,15 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot;
 
-public class BookStackBotInitializer(
-    ILogger<BookStackBotInitializer> logger,
+internal sealed class ServiceBotInitializer(
     IBookStackClient bookStackClient,
-    IOpenAIClient openAIClient
+    IOpenAIClient openAIClient,
+    ILogger<ServiceBotInitializer> logger
 ) : IHostedService
 {
-    private readonly ILogger<BookStackBotInitializer> _logger = logger;
     private readonly IBookStackClient _bookStackClient = bookStackClient;
     private readonly IOpenAIClient _openAIClient = openAIClient;
+    private readonly ILogger<ServiceBotInitializer> _logger = logger;
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -53,5 +53,8 @@ public class BookStackBotInitializer(
         return Task.CompletedTask;
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
 }

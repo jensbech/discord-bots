@@ -4,11 +4,12 @@ using DiscordBots.BookStack;
 using DiscordBots.BoredBot.Dice;
 using DiscordBots.Core;
 using DiscordBots.Core.Logging;
+using DiscordBots.OpenAI;
 using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot
 {
-    public class BoredBot : DiscordBot
+    public partial class BoredBot : DiscordBot
     {
         private static BoredBot? _instance;
 
@@ -32,8 +33,11 @@ namespace DiscordBots.BoredBot
         public static BoredBot? Instance => _instance;
 
         private IBookStackClient? _bookStack;
+        private IOpenAIClient? _openAI;
 
         public void SetBookStackClient(IBookStackClient client) => _bookStack = client;
+
+        public void SetOpenAIClient(IOpenAIClient client) => _openAI = client;
 
         protected override async Task OnSlashCommandAsync(SocketSlashCommand command)
         {
@@ -113,9 +117,38 @@ namespace DiscordBots.BoredBot
                     _logger.LogSlash(command, $"Returned {embeds.Count}/{result.Total}");
                     break;
                 }
+                case "chat":
+                {
+                    var question = GetStringOption(command, "question");
+                    if (string.IsNullOrWhiteSpace(question))
+                    {
+                        await command.RespondAsync("Question required for /chat.", ephemeral: true);
+                        _logger.LogSlashError(command, "Missing question");
+                        break;
+                    }
+                    if (_openAI is null)
+                    {
+                        await command.RespondAsync("Chat service not ready.", ephemeral: true);
+                        _logger.LogSlashError(command, "OpenAI client not set");
+                        break;
+                    }
+                    await command.DeferAsync();
+                    var response = await _openAI.ChatAsync(question);
+                    if (string.IsNullOrWhiteSpace(response))
+                    {
+                        await command.FollowupAsync(
+                            "Sorry, I couldn't generate a response. Please try again."
+                        );
+                        _logger.LogSlash(command, "Empty response from OpenAI");
+                        break;
+                    }
+                    await command.FollowupAsync(response);
+                    _logger.LogSlash(command, "Chat response provided");
+                    break;
+                }
                 case "help":
                 {
-                    await command.RespondAsync("Available commands: /roll, /help");
+                    await command.RespondAsync("Available commands: /roll, /search, /chat, /help");
                     _logger.LogSlash(command);
                     break;
                 }
@@ -132,25 +165,30 @@ namespace DiscordBots.BoredBot
         {
             if (string.IsNullOrWhiteSpace(preview))
                 return string.Empty;
-            // Basic replacements similar to python version
             var cleaned = preview
                 .Replace("<strong>", "**", StringComparison.OrdinalIgnoreCase)
                 .Replace("</strong>", "**", StringComparison.OrdinalIgnoreCase)
                 .Replace("<u>", "__", StringComparison.OrdinalIgnoreCase)
                 .Replace("</u>", "__", StringComparison.OrdinalIgnoreCase);
-            // Strip <img ...>
             cleaned = System.Text.RegularExpressions.Regex.Replace(
                 cleaned,
                 "<img[^>]*>",
                 "",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase
             );
-            // Remove html tags that remain (very light sanitizer)
-            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "<[^>]+>", "");
-            // Collapse whitespace
-            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "\n{2,}", "\n");
-            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "\\s+\\n", "\n");
+            cleaned = MyRegex1().Replace(cleaned, "");
+            cleaned = MyRegex().Replace(cleaned, "\n");
+            cleaned = MyRegex2().Replace(cleaned, "\n");
             return cleaned.Trim();
         }
+
+        [System.Text.RegularExpressions.GeneratedRegex("\n{2,}")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex();
+
+        [System.Text.RegularExpressions.GeneratedRegex("<[^>]+>")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex1();
+
+        [System.Text.RegularExpressions.GeneratedRegex("\\s+\\n")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex2();
     }
 }

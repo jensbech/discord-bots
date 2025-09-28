@@ -25,6 +25,15 @@ namespace DiscordBots.BoredBot
                         isRequired: true
                     ),
                 new SlashCommandBuilder()
+                    .WithName("chat")
+                    .WithDescription("Ask questions about D&D 5E rules")
+                    .AddOption(
+                        name: "question",
+                        type: ApplicationCommandOptionType.String,
+                        description: "Your D&D rules question",
+                        isRequired: true
+                    ),
+                new SlashCommandBuilder()
                     .WithName("help")
                     .WithDescription("Displays a list of available commands."),
             ];
