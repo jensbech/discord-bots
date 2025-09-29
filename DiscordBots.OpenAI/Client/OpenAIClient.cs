@@ -141,6 +141,7 @@ internal sealed class OpenAIClient(
             + "Do NOT include a Sources section, do NOT list document numbers, and do NOT output raw URLs or markdown links. "
             + "Never fabricate details that are not clearly implied by the documents. If partial info exists, state what is known and what is unknown. "
             + "Do not refer to the source material as source material or documents. Discuss it as if it is a truth or just facts. "
+            + "If one of the retrived sources do not add up with the question or appears unrelated, omit it from your answer."
             + "Your tone is that of a story teller, but your job is to reproduce the source material in a factual way. You may assume the reader is already familiar with the world setting";
 
         var request = new ChatCompletionRequest
