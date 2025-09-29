@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands;
 
-internal sealed class RollCommandHandler : ISlashCommandHandler
+internal sealed class RollHandler : ISlashCommandHandler
 {
     public string Name => "roll";
 

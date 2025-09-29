@@ -1,10 +1,9 @@
-using System.Threading.Tasks;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands;
 
-internal sealed class HelpCommandHandler : ISlashCommandHandler
+internal sealed class HelpHandler : ISlashCommandHandler
 {
     public string Name => "help";
 

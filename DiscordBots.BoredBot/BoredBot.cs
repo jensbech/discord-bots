@@ -50,11 +50,11 @@ namespace DiscordBots.BoredBot
 
             var list = new List<ISlashCommandHandler>
             {
-                new RollCommandHandler(),
-                new SearchCommandHandler(_bookStack),
-                new ChatCommandHandler(_openAI),
-                new AskCommandHandler(_bookStack, _openAI),
-                new HelpCommandHandler(),
+                new RollHandler(),
+                new SearchHandler(_bookStack),
+                new ChatHandler(_openAI),
+                new AskHandler(_bookStack, _openAI),
+                new HelpHandler(),
             };
             _handlers = list.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
 

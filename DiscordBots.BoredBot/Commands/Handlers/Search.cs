@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands;
 
-internal sealed class SearchCommandHandler(IBookStackClient bookStackClient) : ISlashCommandHandler
+internal sealed class SearchHandler(IBookStackClient bookStackClient) : ISlashCommandHandler
 {
     private readonly IBookStackClient _bookStackClient = bookStackClient;
 

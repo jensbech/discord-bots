@@ -1,15 +1,12 @@
-using System.Threading.Tasks;
 using Discord.WebSocket;
 using DiscordBots.OpenAI;
 using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands;
 
-internal sealed class ChatCommandHandler : ISlashCommandHandler
+internal sealed class ChatHandler(IOpenAIClient openAIClient) : ISlashCommandHandler
 {
-    private readonly IOpenAIClient _openAIClient;
-
-    public ChatCommandHandler(IOpenAIClient openAIClient) => _openAIClient = openAIClient;
+    private readonly IOpenAIClient _openAIClient = openAIClient;
 
     public string Name => "chat";
 

@@ -6,23 +6,15 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands;
 
-internal sealed class AskCommandHandler : ISlashCommandHandler
+internal sealed class AskHandler(IBookStackClient bookStack, IOpenAIClient openAI)
+    : ISlashCommandHandler
 {
-    private readonly IBookStackClient _bookStack;
-    private readonly IOpenAIClient _openAI;
-
-    public AskCommandHandler(IBookStackClient bookStack, IOpenAIClient openAI)
-    {
-        _bookStack = bookStack;
-        _openAI = openAI;
-    }
+    private readonly IBookStackClient _bookStack = bookStack;
+    private readonly IOpenAIClient _openAI = openAI;
 
     public string Name => "ask";
 
-    public async Task HandleAsync(
-        Discord.WebSocket.SocketSlashCommand command,
-        Microsoft.Extensions.Logging.ILogger logger
-    )
+    public async Task HandleAsync(SocketSlashCommand command, ILogger logger)
     {
         var question =
             command.Data.Options?.FirstOrDefault(o => o.Name == "question")?.Value?.ToString()
