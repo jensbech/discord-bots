@@ -142,8 +142,13 @@ namespace DiscordBots.Core
         protected virtual Task OnSlashCommandAsync(SocketSlashCommand command) =>
             Task.CompletedTask;
 
-        protected static string? GetStringOption(SocketSlashCommand command, string name) =>
-            command.Data.Options?.FirstOrDefault(o => o.Name == name)?.Value?.ToString();
+        protected static string GetStringOption(SocketSlashCommand command, string name)
+        {
+            return command.Data.Options?.FirstOrDefault(o => o.Name == name)?.Value?.ToString()
+                ?? throw new Exception(
+                    $"Failed to construct input based on provided data: '{command}'"
+                );
+        }
 
         public static BotEnvironmentVariables EnsureEnvironmentVariables()
         {

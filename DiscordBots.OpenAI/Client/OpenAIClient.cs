@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Discord;
 using DiscordBots.OpenAI.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,202 +18,77 @@ internal sealed class OpenAIClient(
     private readonly OpenAIOptions _options = options.Value;
     private readonly ILogger<OpenAIClient> _logger = logger;
 
-    public async Task<string?> ChatAboutDndRulesAsync(
-        string question,
-        CancellationToken ct = default
-    )
+    public async Task<string?> ChatAsync(string question)
     {
         var systemPrompt =
-            "You are a chatbot replying ONLY to questions about Dungeons and Dragons 5E rules. "
-            + "You refuse to discuss anything else but DND rules.";
-
-        var request = new ChatCompletionRequest
-        {
-            Model = _options.Model,
-            Messages =
-            [
-                new ChatMessage { Role = "system", Content = systemPrompt },
-                new ChatMessage { Role = "user", Content = question },
-            ],
-            MaxTokens = _options.MaxTokens,
-            Temperature = 0.7,
-        };
-
-        try
-        {
-            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions");
-            httpRequest.Headers.Authorization = new AuthenticationHeaderValue(
-                "Bearer",
-                _options.ApiKey
-            );
-            if (!string.IsNullOrWhiteSpace(_options.Organization))
-            {
-                httpRequest.Headers.Add("OpenAI-Organization", _options.Organization);
-            }
-            if (!string.IsNullOrWhiteSpace(_options.Project))
-            {
-                httpRequest.Headers.Add("OpenAI-Project", _options.Project);
-            }
-            _logger.LogDebug(
-                "Sending OpenAI chat request model={Model} keyPrefix={Prefix} headers=[{Headers}]",
-                _options.Model,
-                _options.ApiKey.Length >= 7 ? _options.ApiKey[..7] : _options.ApiKey,
-                string.Join(
-                    ";",
-                    httpRequest.Headers.Select(h =>
-                        h.Key
-                        + (
-                            h.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)
-                                ? "(set)"
-                                : ""
-                        )
-                    )
-                )
-            );
-            httpRequest.Content = JsonContent.Create(
-                request,
-                options: new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-                }
-            );
-
-            var response = await _http.SendAsync(httpRequest, ct);
-            if (!response.IsSuccessStatusCode)
-            {
-                string? body = null;
-                try
-                {
-                    body = await response.Content.ReadAsStringAsync(ct);
-                }
-                catch { }
-                _logger.LogWarning(
-                    "OpenAI API call failed with {Status} body snippet: {Body}",
-                    response.StatusCode,
-                    body is null ? "<empty>" : body[..Math.Min(200, body.Length)]
-                );
-                return null;
-            }
-
-            var result = await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(
-                new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-                },
-                ct
-            );
-
-            return result?.Choices.FirstOrDefault()?.Message.Content;
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error performing OpenAI chat completion");
-            return null;
-        }
+            "You are a chatbot replying ONLY to questions about Dungeons and Dragons 5E rules. You refuse to discuss anything else but DND rules.";
+        var response = await _http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
+        return await EnsureChatAnswerString(response);
     }
 
     public async Task<string?> ChatWithContextAsync(
         string question,
-        IReadOnlyList<string> documents,
-        CancellationToken ct = default
+        IReadOnlyList<string> documents
     )
     {
-        var limitedDocs = documents
-            .Where(d => !string.IsNullOrWhiteSpace(d))
-            .Select(d => d.Length > 3000 ? d[..3000] + "…" : d)
-            .Take(8)
-            .ToList();
-
-        var contextBlocks = string.Join(
-            "\n\n---\n\n",
-            limitedDocs.Select((d, i) => $"Document {i + 1}:\n{d}")
-        );
-
         var systemPrompt =
             "Write a comprehensive, well-structured answer (multiple paragraphs) summarizing and synthesizing the information. Write ALL that is required, without restraint"
             + "Assume the reader is familiar with the setting, no need for fluff about that."
             + "If any retrieved article does not relate to the question, omit it from your answer."
             + "Your tone is that of a story teller, but your job is to reproduce the source material in a factual way. You may assume the reader is already familiar with the world setting";
 
-        var request = new ChatCompletionRequest
+        question =
+            $"User Question: {question}\n\n Context for answering your query: {string.Join(
+            "\n\n---\n\n",
+            documents.Select((d, i) => $"Document {i + 1}:\n{d}")
+        )}";
+
+        var response = await _http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
+        return await EnsureChatAnswerString(response);
+    }
+
+    private HttpRequestMessage ConstructCompletionRequest(string question, string? systemPrompt)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+        req.Headers.Add("OpenAI-Project", _options.Project);
+
+        List<ChatMessage> messages = [];
+        if (!string.IsNullOrEmpty(systemPrompt))
         {
-            Model = _options.Model,
-            Messages =
-            [
-                new ChatMessage
-                {
-                    Role = "system",
-                    Content =
-                        "You are a retrieval-augmented lore assistant. Read the user question, and then the retrieved articles from the. question.",
-                },
-                new ChatMessage
-                {
-                    Role = "user",
-                    Content =
-                        $"User Question: {question}\n\nInstructions: {systemPrompt}. Context for answerving your query: {contextBlocks}",
-                },
-            ],
-            MaxTokens = _options.MaxTokens,
-            Temperature = 0.4,
-        };
+            messages.Add(new ChatMessage { Role = "system", Content = systemPrompt });
+        }
+        messages.Add(new ChatMessage { Role = "user", Content = question });
 
-        try
-        {
-            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions");
-            httpRequest.Headers.Authorization = new AuthenticationHeaderValue(
-                "Bearer",
-                _options.ApiKey
-            );
-            httpRequest.Headers.Add("OpenAI-Organization", _options.Organization);
-            httpRequest.Headers.Add("OpenAI-Project", _options.Project);
-
-            httpRequest.Content = JsonContent.Create(
-                request,
-                options: new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-                }
-            );
-
-            var response = await _http.SendAsync(httpRequest, ct);
-            if (!response.IsSuccessStatusCode)
+        req.Content = JsonContent.Create(
+            new ChatCompletionRequest
             {
-                string? body = null;
-                try
-                {
-                    body = await response.Content.ReadAsStringAsync(ct);
-                }
-                catch { }
-                _logger.LogWarning(
-                    "OpenAI contextual API call failed with {Status} body snippet: {Body}",
-                    response.StatusCode,
-                    body is null ? "<empty>" : body[..Math.Min(200, body.Length)]
-                );
-                return null;
+                Model = _options.Model,
+                Messages = messages,
+                MaxTokens = _options.MaxTokens,
+                Temperature = 0.3,
             }
+        );
+        return req;
+    }
 
-            var result = await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(
-                new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-                },
-                ct
-            );
+    private async Task<string> EnsureChatAnswerString(HttpResponseMessage httpResponse)
+    {
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            var errorContent = await httpResponse.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error response: {errorContent}");
+            var error = $"Failed to get response from OpenAI: '{httpResponse.StatusCode}'";
+            _logger.LogError(error, httpResponse.StatusCode);
+            throw new Exception(error);
+        }
 
-            return result?.Choices.FirstOrDefault()?.Message.Content;
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error performing OpenAI contextual chat completion");
-            return null;
-        }
+        var result =
+            await httpResponse.Content.ReadFromJsonAsync<ChatCompletionResponse>()
+            ?? throw new Exception("OpenAI response is null");
+
+        return result.Choices.Count > 0
+            ? result.Choices[0].Message.Content
+            : throw new Exception("OpenAI response content is null");
     }
 }

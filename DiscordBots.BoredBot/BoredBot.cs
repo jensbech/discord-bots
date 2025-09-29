@@ -32,8 +32,8 @@ namespace DiscordBots.BoredBot
 
         public static BoredBot? Instance => _instance;
 
-        private IBookStackClient? _bookStack;
-        private IOpenAIClient? _openAI;
+        private IBookStackClient _bookStack;
+        private IOpenAIClient _openAI;
 
         public void SetBookStackClient(IBookStackClient client) => _bookStack = client;
 
@@ -45,17 +45,9 @@ namespace DiscordBots.BoredBot
             {
                 case "roll":
                 {
-                    var input = GetStringOption(command, "input");
-                    if (string.IsNullOrWhiteSpace(input))
-                    {
-                        await command.RespondAsync(
-                            "Input required for /roll. Example: d20 or 2d8+4",
-                            ephemeral: true
-                        );
-                        _logger.LogSlashError(command, "Missing dice expression");
-                        return;
-                    }
-                    if (Roller.TryHandleRollCommand(input, out var resultMessage))
+                    var userInput = GetStringOption(command, "input");
+
+                    if (Roller.TryHandleRollCommand(userInput, out var resultMessage))
                     {
                         await command.RespondAsync(resultMessage);
                         _logger.LogSlash(command, resultMessage);
@@ -67,37 +59,29 @@ namespace DiscordBots.BoredBot
                     }
                     break;
                 }
+
                 case "search":
                 {
                     var query = GetStringOption(command, "query");
-                    if (string.IsNullOrWhiteSpace(query))
-                    {
-                        await command.RespondAsync("Query required for /search.", ephemeral: true);
-                        _logger.LogSlashError(command, "Missing query");
-                        break;
-                    }
-                    if (_bookStack is null)
-                    {
-                        await command.RespondAsync("Search service not ready.", ephemeral: true);
-                        _logger.LogSlashError(command, "BookStack client not set");
-                        break;
-                    }
+
                     await command.DeferAsync();
-                    var result = await _bookStack!.SearchAsync(query, count: 5);
-                    if (result == null || result.Data.Count == 0)
+                    var result = await _bookStack!.SearchAsync(query);
+
+                    if (result == null || result.data.Count == 0)
                     {
                         await command.FollowupAsync($"No results for '{query}'.");
                         _logger.LogSlash(command, "0 results");
                         break;
                     }
+
                     var embeds = new List<EmbedBuilder>();
-                    foreach (var item in result.Data.Take(5))
+                    foreach (var item in result.data)
                     {
                         var eb = new EmbedBuilder()
-                            .WithTitle(item.Name)
-                            .WithUrl(item.Url)
+                            .WithTitle(item.name)
+                            .WithUrl(item.url)
                             .WithColor(new Color(0, 128, 128));
-                        var preview = item.Preview_Html.Content;
+                        var preview = item.preview_html.content;
                         if (!string.IsNullOrWhiteSpace(preview))
                         {
                             var cleaned = CleanPreview(preview);
@@ -117,31 +101,12 @@ namespace DiscordBots.BoredBot
                     _logger.LogSlash(command, $"Returned {embeds.Count}/{result.Total}");
                     break;
                 }
+
                 case "chat":
                 {
                     var question = GetStringOption(command, "question");
-                    if (string.IsNullOrWhiteSpace(question))
-                    {
-                        await command.RespondAsync("Question required for /chat.", ephemeral: true);
-                        _logger.LogSlashError(command, "Missing question");
-                        break;
-                    }
-                    if (_openAI is null)
-                    {
-                        await command.RespondAsync("Chat service not ready.", ephemeral: true);
-                        _logger.LogSlashError(command, "OpenAI client not set");
-                        break;
-                    }
                     await command.DeferAsync();
-                    var response = await _openAI.ChatAboutDndRulesAsync(question);
-                    if (string.IsNullOrWhiteSpace(response))
-                    {
-                        await command.FollowupAsync(
-                            "Sorry, I couldn't generate a response. Please try again."
-                        );
-                        _logger.LogSlash(command, "Empty response from OpenAI");
-                        break;
-                    }
+                    var response = await _openAI.ChatAsync(question);
                     await command.FollowupAsync(response);
                     _logger.LogSlash(command, "Chat response provided");
                     break;
@@ -149,48 +114,39 @@ namespace DiscordBots.BoredBot
                 case "ask":
                 {
                     var question = GetStringOption(command, "question");
-
-                    if (string.IsNullOrWhiteSpace(question))
-                    {
-                        await command.RespondAsync("Question required for /ask.", ephemeral: true);
-                        _logger.LogSlashError(command, "Missing question");
-                        break;
-                    }
-
                     await command.DeferAsync();
+
                     try
                     {
-                        var searchQuery = DeriveSearchQuery(question);
+                        var search = await _bookStack.SearchAsync(question, count: 5);
 
-                        var search = await _bookStack.SearchAsync(searchQuery, count: 5);
-                        
-                        if (search is null || search.Data.Count == 0)
+                        if (search is null || search.data.Count == 0)
                         {
                             await command.FollowupAsync(
-                                $"No knowledge base results for '{searchQuery}'."
+                                $"No knowledge base results for '{question}'."
                             );
                             _logger.LogSlash(command, "ask no results");
                             break;
                         }
 
-                        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                         var results = new List<(string Url, string? Text)>();
-                        foreach (var item in search.Data.Take(5))
+
+                        foreach (var item in search.data)
                         {
-                            var url = item.Url;
-                            var result = await FetchPageAsync(url, cts.Token);
+                            var url = item.url;
+                            var result = await FetchPageAsync(url);
                             results.Add(result);
-                            await Task.Delay(100, cts.Token);
                         }
                         var docs = new List<string>();
-                        foreach (var item in search.Data.Take(5))
+
+                        foreach (var item in search.data)
                         {
-                            var (Url, Text) = results.FirstOrDefault(r => r.Url == item.Url);
+                            var (Url, Text) = results.FirstOrDefault(r => r.Url == item.url);
 
                             if (Text is null)
                                 continue;
-                            var preview = CleanPreview(item.Preview_Html.Content ?? string.Empty);
-                            var header = $"Title: {item.Name}\nURL: {item.Url}";
+                            var preview = CleanPreview(item.preview_html.content ?? string.Empty);
+                            var header = $"Title: {item.name}\nURL: {item.url}";
                             if (!string.IsNullOrWhiteSpace(preview))
                             {
                                 preview = preview.Length > 400 ? preview[..400] + "…" : preview;
@@ -232,7 +188,6 @@ namespace DiscordBots.BoredBot
                         static IEnumerable<string> SplitForDiscord(string text)
                         {
                             const int maxLen = 1900;
-                            if (text.Length <= maxLen)
                             {
                                 yield return text;
                                 yield break;
@@ -283,7 +238,7 @@ namespace DiscordBots.BoredBot
 
                         var sourceSummary = string.Join(
                             "; ",
-                            search.Data.Take(5).Select(s => s.Name + "=" + s.Url)
+                            search.data.Take(5).Select(s => s.name + "=" + s.url)
                         );
                         _logger.LogSlash(command, $"ask answered sources: {sourceSummary}");
                     }
@@ -341,62 +296,19 @@ namespace DiscordBots.BoredBot
         [System.Text.RegularExpressions.GeneratedRegex("\\s+\\n")]
         private static partial System.Text.RegularExpressions.Regex MyRegex2();
 
-        private async Task<(string Url, string? Text)> FetchPageAsync(
-            string url,
-            CancellationToken ct
-        )
+        private async Task<(string Url, string? Text)> FetchPageAsync(string url)
         {
             if (_bookStack is null)
                 return (url, null);
             try
             {
-                var text = await _bookStack.GetPageTextAsync(url, ct);
+                var text = await _bookStack.GetPageHtmlAsync(url);
                 return (url, text);
             }
             catch
             {
                 return (url, null);
             }
-        }
-
-        private static string DeriveSearchQuery(string question)
-        {
-            if (string.IsNullOrWhiteSpace(question))
-                return question;
-            var q = question.Trim();
-            var lower = q.ToLowerInvariant();
-            string[] prefixes =
-            [
-                "who is ",
-                "who was ",
-                "what is ",
-                "what was ",
-                "tell me about ",
-                "give me information about ",
-                "describe ",
-                "hva er ",
-                "hvem er ",
-                "hvem var ",
-                "fortell meg om ",
-            ];
-            foreach (var p in prefixes)
-            {
-                if (lower.StartsWith(p))
-                {
-                    q = q[p.Length..];
-                    break;
-                }
-            }
-            q = q.Trim().TrimEnd('?').Trim();
-            var parts = q.Split(
-                ' ',
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-            );
-            if (parts.Length > 6)
-            {
-                q = string.Join(' ', parts.Take(6));
-            }
-            return string.IsNullOrWhiteSpace(q) ? question : q;
         }
     }
 }

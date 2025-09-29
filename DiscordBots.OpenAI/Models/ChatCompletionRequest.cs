@@ -1,10 +1,14 @@
+using System.Text.Json.Serialization;
+
 namespace DiscordBots.OpenAI.Models
 {
     public sealed class ChatCompletionRequest
     {
         public required string Model { get; init; }
         public required IReadOnlyList<ChatMessage> Messages { get; init; }
-        public int? MaxTokens { get; init; }
+
+        [JsonPropertyName("max_tokens")]
+        public int? MaxTokens { get; set; }
         public double? Temperature { get; init; }
     }
 
