@@ -19,7 +19,7 @@ public static class LoggerExtensions
     public static void LogIncomingUserMessage(this ILogger logger, SocketMessage message)
     {
         if (message.Author.IsBot)
-            return; // skip bot
+            return;
         logger.LogInformation(
             "{Context} {Content}",
             BuildContext(message.Author, message.Channel),
@@ -75,7 +75,6 @@ public static class LoggerExtensions
         );
     }
 
-    // Shorthand overloads for SocketSlashCommand to reduce verbosity
     public static void LogSlash(this ILogger logger, SocketSlashCommand cmd, string? outcome = null)
     {
         var input = cmd.Data.Options?.FirstOrDefault()?.Value?.ToString();

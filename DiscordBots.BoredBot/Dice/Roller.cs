@@ -2,10 +2,6 @@ namespace DiscordBots.BoredBot.Dice
 {
     public class Roller
     {
-        /// <summary>
-        /// Attempts to process a roll command. Returns true on success and sets resultMessage to the formatted
-        /// roll outcome. Returns false on parse/validation failure and sets resultMessage to a user friendly error.
-        /// </summary>
         public static bool TryHandleRollCommand(string textInput, out string resultMessage)
         {
             resultMessage = string.Empty;

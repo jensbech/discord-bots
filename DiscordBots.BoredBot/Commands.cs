@@ -34,6 +34,15 @@ namespace DiscordBots.BoredBot
                         isRequired: true
                     ),
                 new SlashCommandBuilder()
+                    .WithName("ask")
+                    .WithDescription("Ask a question answered from BookStack content via AI")
+                    .AddOption(
+                        name: "question",
+                        type: ApplicationCommandOptionType.String,
+                        description: "Your knowledge-base question",
+                        isRequired: true
+                    ),
+                new SlashCommandBuilder()
                     .WithName("help")
                     .WithDescription("Displays a list of available commands."),
             ];

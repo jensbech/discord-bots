@@ -10,5 +10,9 @@ namespace DiscordBots.BookStack
             int count = 10,
             CancellationToken ct = default
         );
+
+        Task<string?> GetPageHtmlAsync(string pageUrl, CancellationToken ct = default);
+
+        Task<string?> GetPageTextAsync(string pageUrl, CancellationToken ct = default);
     }
 }

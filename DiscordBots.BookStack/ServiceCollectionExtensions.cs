@@ -50,13 +50,24 @@ namespace DiscordBots.BookStack
                 o.GuildId = guildId;
             });
 
-            services.AddHttpClient<IBookStackClient, BookStackClient>(client =>
-            {
-                client.BaseAddress = new Uri(normalizedBaseUrl);
-                client.DefaultRequestHeaders.Accept.Clear();
-                client.DefaultRequestHeaders.Add("User-Agent", "DiscordBots/BookStackClient");
-                client.DefaultRequestHeaders.Add("Accept", "application/json");
-            });
+            _ = services
+                .AddHttpClient<IBookStackClient, BookStackClient>(client =>
+                {
+                    client.BaseAddress = new Uri(normalizedBaseUrl);
+                    client.DefaultRequestHeaders.Accept.Clear();
+                    client.DefaultRequestHeaders.Add("User-Agent", "DiscordBots/BookStackClient");
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                })
+                .ConfigurePrimaryHttpMessageHandler(() =>
+                    new HttpClientHandler() { MaxConnectionsPerServer = 1, UseCookies = false }
+                )
+                .ConfigureHttpClient(client =>
+                {
+                    client.DefaultRequestVersion = new Version(1, 1);
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+                });
+            // .SetHandlerLifetime(TimeSpan.FromSeconds(1));
 
             return services;
         }

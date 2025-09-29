@@ -146,9 +146,159 @@ namespace DiscordBots.BoredBot
                     _logger.LogSlash(command, "Chat response provided");
                     break;
                 }
+                case "ask":
+                {
+                    var question = GetStringOption(command, "question");
+
+                    if (string.IsNullOrWhiteSpace(question))
+                    {
+                        await command.RespondAsync("Question required for /ask.", ephemeral: true);
+                        _logger.LogSlashError(command, "Missing question");
+                        break;
+                    }
+
+                    await command.DeferAsync();
+                    try
+                    {
+                        var searchQuery = DeriveSearchQuery(question);
+
+                        var search = await _bookStack.SearchAsync(searchQuery, count: 5);
+                        
+                        if (search is null || search.Data.Count == 0)
+                        {
+                            await command.FollowupAsync(
+                                $"No knowledge base results for '{searchQuery}'."
+                            );
+                            _logger.LogSlash(command, "ask no results");
+                            break;
+                        }
+
+                        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                        var results = new List<(string Url, string? Text)>();
+                        foreach (var item in search.Data.Take(5))
+                        {
+                            var url = item.Url;
+                            var result = await FetchPageAsync(url, cts.Token);
+                            results.Add(result);
+                            await Task.Delay(100, cts.Token);
+                        }
+                        var docs = new List<string>();
+                        foreach (var item in search.Data.Take(5))
+                        {
+                            var (Url, Text) = results.FirstOrDefault(r => r.Url == item.Url);
+
+                            if (Text is null)
+                                continue;
+                            var preview = CleanPreview(item.Preview_Html.Content ?? string.Empty);
+                            var header = $"Title: {item.Name}\nURL: {item.Url}";
+                            if (!string.IsNullOrWhiteSpace(preview))
+                            {
+                                preview = preview.Length > 400 ? preview[..400] + "…" : preview;
+                                header += $"\nPreview: {preview}";
+                            }
+                            string body;
+                            if (Text.Length > 2500)
+                                body = Text[..2500] + "…";
+                            else
+                                body = Text;
+                            docs.Add(header + "\n\n" + body);
+                        }
+                        if (docs.Count == 0)
+                        {
+                            await command.FollowupAsync(
+                                "Couldn't retrieve page contents to answer."
+                            );
+                            _logger.LogSlash(command, "ask empty docs");
+                            break;
+                        }
+
+                        var answer = await _openAI.ChatWithContextAsync(question, docs);
+                        if (string.IsNullOrWhiteSpace(answer))
+                        {
+                            await command.FollowupAsync("AI couldn't form an answer from docs.");
+                            _logger.LogSlash(command, "ask no answer");
+                            break;
+                        }
+
+                        var lines = answer.Split('\n');
+                        lines = lines
+                            .Where(l =>
+                                !l.TrimStart()
+                                    .StartsWith("Sources:", StringComparison.OrdinalIgnoreCase)
+                            )
+                            .ToArray();
+                        answer = string.Join('\n', lines).Trim();
+
+                        static IEnumerable<string> SplitForDiscord(string text)
+                        {
+                            const int maxLen = 1900;
+                            if (text.Length <= maxLen)
+                            {
+                                yield return text;
+                                yield break;
+                            }
+                            var paragraphs = text.Split("\n\n", StringSplitOptions.None);
+                            var current = new System.Text.StringBuilder();
+                            foreach (var p in paragraphs)
+                            {
+                                var block = p.TrimEnd();
+                                if (
+                                    current.Length + block.Length + 2 > maxLen
+                                    && current.Length > 0
+                                )
+                                {
+                                    yield return current.ToString();
+                                    current.Clear();
+                                }
+                                if (block.Length > maxLen)
+                                {
+                                    int idx = 0;
+                                    while (idx < block.Length)
+                                    {
+                                        var take = Math.Min(maxLen, block.Length - idx);
+                                        var slice = block.Substring(idx, take);
+                                        yield return slice;
+                                        idx += take;
+                                    }
+                                }
+                                else
+                                {
+                                    if (current.Length > 0)
+                                        current.Append('\n').Append('\n');
+                                    current.Append(block);
+                                }
+                            }
+                            if (current.Length > 0)
+                                yield return current.ToString();
+                        }
+
+                        var chunks = SplitForDiscord(answer).ToList();
+                        for (int i = 0; i < chunks.Count; i++)
+                        {
+                            if (i == 0)
+                                await command.FollowupAsync(chunks[i]);
+                            else
+                                await command.FollowupAsync(chunks[i]);
+                        }
+
+                        var sourceSummary = string.Join(
+                            "; ",
+                            search.Data.Take(5).Select(s => s.Name + "=" + s.Url)
+                        );
+                        _logger.LogSlash(command, $"ask answered sources: {sourceSummary}");
+                    }
+                    catch (Exception ex)
+                    {
+                        await command.FollowupAsync("Unexpected error processing /ask.");
+                        _logger.LogSlashError(command, $"ask exception {ex.Message}");
+                    }
+                    break;
+                }
                 case "help":
                 {
-                    await command.RespondAsync("Available commands: /roll, /search, /chat, /help");
+                    await command.RespondAsync(
+                        "Available commands: /roll, /search, /chat, /ask, /help"
+                    );
                     _logger.LogSlash(command);
                     break;
                 }
@@ -190,5 +340,63 @@ namespace DiscordBots.BoredBot
 
         [System.Text.RegularExpressions.GeneratedRegex("\\s+\\n")]
         private static partial System.Text.RegularExpressions.Regex MyRegex2();
+
+        private async Task<(string Url, string? Text)> FetchPageAsync(
+            string url,
+            CancellationToken ct
+        )
+        {
+            if (_bookStack is null)
+                return (url, null);
+            try
+            {
+                var text = await _bookStack.GetPageTextAsync(url, ct);
+                return (url, text);
+            }
+            catch
+            {
+                return (url, null);
+            }
+        }
+
+        private static string DeriveSearchQuery(string question)
+        {
+            if (string.IsNullOrWhiteSpace(question))
+                return question;
+            var q = question.Trim();
+            var lower = q.ToLowerInvariant();
+            string[] prefixes =
+            [
+                "who is ",
+                "who was ",
+                "what is ",
+                "what was ",
+                "tell me about ",
+                "give me information about ",
+                "describe ",
+                "hva er ",
+                "hvem er ",
+                "hvem var ",
+                "fortell meg om ",
+            ];
+            foreach (var p in prefixes)
+            {
+                if (lower.StartsWith(p))
+                {
+                    q = q[p.Length..];
+                    break;
+                }
+            }
+            q = q.Trim().TrimEnd('?').Trim();
+            var parts = q.Split(
+                ' ',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            );
+            if (parts.Length > 6)
+            {
+                q = string.Join(' ', parts.Take(6));
+            }
+            return string.IsNullOrWhiteSpace(q) ? question : q;
+        }
     }
 }
