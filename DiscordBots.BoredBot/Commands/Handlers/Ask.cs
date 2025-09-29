@@ -23,7 +23,7 @@ internal sealed class AskHandler(IBookStackClient bookStack, IOpenAIClient openA
         try
         {
             var search = await _bookStack.SearchAsync(question, count: 5);
-            if (search is null || search.data.Count == 0)
+            if (search is null || search.Data.Count == 0)
             {
                 await command.FollowupAsync($"No knowledge base results for '{question}'.");
                 logger.LogInformation("/ask {Question} => no results", question);
@@ -31,14 +31,14 @@ internal sealed class AskHandler(IBookStackClient bookStack, IOpenAIClient openA
             }
 
             var docs = new List<string>();
-            foreach (var item in search.data)
+            foreach (var item in search.Data)
             {
-                var pageHtml = await _bookStack.GetPageHtmlAsync(item.url);
+                var pageHtml = await _bookStack.GetPageHtmlAsync(item.Url);
                 if (pageHtml is null)
                     continue;
 
-                var preview = PreviewCleaner.Clean(item.preview_html.content ?? string.Empty);
-                var header = $"Title: {item.name}\nURL: {item.url}";
+                var preview = PreviewCleaner.Clean(item.PreviewHtml.Content ?? string.Empty);
+                var header = $"Title: {item.Name}\nURL: {item.Url}";
                 if (!string.IsNullOrWhiteSpace(preview))
                 {
                     var trimmedPrev = preview.Length > 400 ? preview[..400] + "…" : preview;

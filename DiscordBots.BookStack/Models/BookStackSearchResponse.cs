@@ -1,20 +1,30 @@
+using System.Text.Json.Serialization;
+
 namespace DiscordBots.BookStack.Models
 {
     public sealed class BookStackSearchResponse
     {
         public int Total { get; init; }
-        public required IReadOnlyList<BookStackSearchResult> data { get; init; }
-    }
 
-    public sealed class BookStackSearchResult
-    {
-        public required string name { get; init; }
-        public required string url { get; init; }
-        public required PreviewHtml preview_html { get; init; }
-    }
+        [JsonPropertyName("data")]
+        public required IReadOnlyList<BookStackSearchResult> Data { get; init; }
 
-    public sealed class PreviewHtml
-    {
-        public required string content { get; init; }
+        public sealed class BookStackSearchResult
+        {
+            [JsonPropertyName("name")]
+            public required string Name { get; init; }
+
+            [JsonPropertyName("url")]
+            public required string Url { get; init; }
+
+            [JsonPropertyName("preview_html")]
+            public required PreviewHtml PreviewHtml { get; init; }
+        }
+
+        public sealed class PreviewHtml
+        {
+            [JsonPropertyName("content")]
+            public required string Content { get; init; }
+        }
     }
 }

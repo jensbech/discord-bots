@@ -7,6 +7,12 @@ using Microsoft.Extensions.Options;
 
 namespace DiscordBots.BookStack
 {
+    public interface IBookStackClient
+    {
+        Task<BookStackSearchResponse?> SearchAsync(string query, int page = 1, int count = 10);
+        Task<string?> GetPageHtmlAsync(string pageUrl);
+    }
+
     internal sealed class BookStackClient(
         HttpClient http,
         IOptions<BookStackOptions> options,

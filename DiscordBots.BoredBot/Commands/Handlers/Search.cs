@@ -20,7 +20,7 @@ internal sealed class SearchHandler(IBookStackClient bookStackClient) : ISlashCo
 
         var result = await _bookStackClient.SearchAsync(query);
 
-        if (result == null || result.data.Count == 0)
+        if (result == null || result.Data.Count == 0)
         {
             await command.FollowupAsync($"No results for '{query}'.");
             logger.LogInformation("/search {Query} => 0 results", query);
@@ -28,13 +28,13 @@ internal sealed class SearchHandler(IBookStackClient bookStackClient) : ISlashCo
         }
 
         var embeds = new List<EmbedBuilder>();
-        foreach (var item in result.data)
+        foreach (var item in result.Data)
         {
             var eb = new EmbedBuilder()
-                .WithTitle(item.name)
-                .WithUrl(item.url)
+                .WithTitle(item.Name)
+                .WithUrl(item.Url)
                 .WithColor(new Color(0, 128, 128));
-            var preview = item.preview_html.content;
+            var preview = item.PreviewHtml.Content;
             if (!string.IsNullOrWhiteSpace(preview))
             {
                 var cleaned = PreviewCleaner.Clean(preview);
