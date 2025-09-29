@@ -133,7 +133,7 @@ namespace DiscordBots.BoredBot
                         break;
                     }
                     await command.DeferAsync();
-                    var response = await _openAI.ChatAsync(question);
+                    var response = await _openAI.ChatAboutDndRulesAsync(question);
                     if (string.IsNullOrWhiteSpace(response))
                     {
                         await command.FollowupAsync(

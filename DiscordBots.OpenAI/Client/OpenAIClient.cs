@@ -17,11 +17,11 @@ internal sealed class OpenAIClient(
     private readonly OpenAIOptions _options = options.Value;
     private readonly ILogger<OpenAIClient> _logger = logger;
 
-    public async Task<string?> ChatAsync(string question, CancellationToken ct = default)
+    public async Task<string?> ChatAboutDndRulesAsync(
+        string question,
+        CancellationToken ct = default
+    )
     {
-        if (string.IsNullOrWhiteSpace(question))
-            return null;
-
         var systemPrompt =
             "You are a chatbot replying ONLY to questions about Dungeons and Dragons 5E rules. "
             + "You refuse to discuss anything else but DND rules.";
@@ -29,11 +29,11 @@ internal sealed class OpenAIClient(
         var request = new ChatCompletionRequest
         {
             Model = _options.Model,
-            Messages = new[]
-            {
+            Messages =
+            [
                 new ChatMessage { Role = "system", Content = systemPrompt },
                 new ChatMessage { Role = "user", Content = question },
-            },
+            ],
             MaxTokens = _options.MaxTokens,
             Temperature = 0.7,
         };
@@ -121,12 +121,10 @@ internal sealed class OpenAIClient(
         CancellationToken ct = default
     )
     {
-        if (string.IsNullOrWhiteSpace(question))
-            return null;
         var limitedDocs = documents
             .Where(d => !string.IsNullOrWhiteSpace(d))
             .Select(d => d.Length > 3000 ? d[..3000] + "…" : d)
-            .Take(8) // keep token usage sane
+            .Take(8)
             .ToList();
 
         var contextBlocks = string.Join(
@@ -135,30 +133,31 @@ internal sealed class OpenAIClient(
         );
 
         var systemPrompt =
-            "You are a retrieval-augmented lore assistant. Read the user question, then rely ONLY on the provided documents. "
+            "Write a comprehensive, well-structured answer (multiple paragraphs) summarizing and synthesizing the information. Write ALL that is required, without restraint"
             + "Assume the reader is familiar with the setting, no need for fluff about that."
-            + "Write a comprehensive, well-structured answer (multiple paragraphs) summarising and synthesising the information. Write ALL that is required, without restraint"
-            + "Do NOT include a Sources section, do NOT list document numbers, and do NOT output raw URLs or markdown links. "
-            + "Never fabricate details that are not clearly implied by the documents. If partial info exists, state what is known and what is unknown. "
-            + "Do not refer to the source material as source material or documents. Discuss it as if it is a truth or just facts. "
-            + "If one of the retrived sources do not add up with the question or appears unrelated, omit it from your answer."
+            + "If any retrieved article does not relate to the question, omit it from your answer."
             + "Your tone is that of a story teller, but your job is to reproduce the source material in a factual way. You may assume the reader is already familiar with the world setting";
 
         var request = new ChatCompletionRequest
         {
             Model = _options.Model,
-            Messages = new[]
-            {
-                new ChatMessage { Role = "system", Content = systemPrompt },
+            Messages =
+            [
+                new ChatMessage
+                {
+                    Role = "system",
+                    Content =
+                        "You are a retrieval-augmented lore assistant. Read the user question, and then the retrieved articles from the. question.",
+                },
                 new ChatMessage
                 {
                     Role = "user",
                     Content =
-                        $"User Question: {question}\n\nInstructions: Use the documents below to answer. If unsure, state that the documents do not contain the answer. Do not use outside knowledge.\n\nDocuments:\n{contextBlocks}",
+                        $"User Question: {question}\n\nInstructions: {systemPrompt}. Context for answerving your query: {contextBlocks}",
                 },
-            },
-            MaxTokens = Math.Min(_options.MaxTokens, 1200),
-            Temperature = 0.25,
+            ],
+            MaxTokens = _options.MaxTokens,
+            Temperature = 0.4,
         };
 
         try
@@ -168,31 +167,9 @@ internal sealed class OpenAIClient(
                 "Bearer",
                 _options.ApiKey
             );
-            if (!string.IsNullOrWhiteSpace(_options.Organization))
-            {
-                httpRequest.Headers.Add("OpenAI-Organization", _options.Organization);
-            }
-            if (!string.IsNullOrWhiteSpace(_options.Project))
-            {
-                httpRequest.Headers.Add("OpenAI-Project", _options.Project);
-            }
-            _logger.LogDebug(
-                "Sending OpenAI contextual chat request model={Model} keyPrefix={Prefix} headers=[{Headers}] docs={DocCount}",
-                _options.Model,
-                _options.ApiKey.Length >= 7 ? _options.ApiKey[..7] : _options.ApiKey,
-                string.Join(
-                    ";",
-                    httpRequest.Headers.Select(h =>
-                        h.Key
-                        + (
-                            h.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)
-                                ? "(set)"
-                                : ""
-                        )
-                    )
-                ),
-                documents.Count
-            );
+            httpRequest.Headers.Add("OpenAI-Organization", _options.Organization);
+            httpRequest.Headers.Add("OpenAI-Project", _options.Project);
+
             httpRequest.Content = JsonContent.Create(
                 request,
                 options: new JsonSerializerOptions
