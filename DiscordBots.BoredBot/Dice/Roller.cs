@@ -108,31 +108,63 @@ namespace DiscordBots.BoredBot.Dice
             int rollModifier
         )
         {
-            var diceRollResultLines = new List<string>();
+            if (diceRolls.Count == 1 && rollModifier == 0)
+            {
+                var (sides, result, msg) = diceRolls[0];
+                var critPart = string.IsNullOrWhiteSpace(msg) ? string.Empty : $" — **{msg}**";
+                var emoji = GetResultEmoji(sides, result);
+                return $"{emoji}  d{sides} = **{result}**{critPart}";
+            }
 
+            var lines = new List<string> { "🎲 Dice Rolls:" };
+
+            int width = diceRolls.Max(r => r.sides.ToString().Length);
             for (int i = 0; i < diceRolls.Count; i++)
             {
                 var (sides, value, msg) = diceRolls[i];
-                var prefix = diceRolls.Count == 1 ? string.Empty : $"Roll #{i + 1}: ";
-                var line = $"{prefix}(d{sides}) => {value}";
-                if (!string.IsNullOrWhiteSpace(msg))
-                    line += $" **{msg}**";
-                diceRollResultLines.Add(line);
+                var sideLabel = ($"d{sides}").PadLeft(width + 1);
+                var msgPart = string.IsNullOrWhiteSpace(msg) ? string.Empty : $"  **{msg}**";
+                var emoji = GetResultEmoji(sides, value);
+                lines.Add($"{emoji}  {sideLabel} = {value}{msgPart}");
             }
 
-            if (diceRolls.Count > 1 || rollModifier != 0)
+            if (rollModifier != 0)
             {
-                var finalSumWithModifier = sumOfAllRolls + rollModifier;
-
-                if (rollModifier != 0)
-                {
-                    var sign = rollModifier > 0 ? "+" : "-";
-                    diceRollResultLines.Add($"Modifier: {sign}{Math.Abs(rollModifier)}");
-                }
-                diceRollResultLines.Add($"Sum of all rolls: {finalSumWithModifier}");
+                var sign = rollModifier > 0 ? "+" : "-";
+                lines.Add($"Modifier: {sign}{Math.Abs(rollModifier)}");
             }
 
-            return string.Join("\n", diceRollResultLines);
+            var total = sumOfAllRolls + rollModifier;
+            lines.Add($"═ Total: **{total}**");
+
+            return string.Join("\n", lines);
+        }
+
+        private static string GetResultEmoji(int sides, int value)
+        {
+            if (sides <= 0)
+                return "🎲";
+
+            double pct = value / (double)sides;
+
+            if (sides == Dice.Twenty)
+            {
+                if (value == 1)
+                    return "💀";
+                if (value == 20)
+                    return "🌟";
+            }
+
+            return pct switch
+            {
+                <= 0.10 => "💢",
+                <= 0.25 => "😖",
+                <= 0.50 => "😐",
+                <= 0.75 => "🙂",
+                <= 0.90 => "😄",
+                < 1.00 => "🔥",
+                _ => "🏆",
+            };
         }
     }
 }

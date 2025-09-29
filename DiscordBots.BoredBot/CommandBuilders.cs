@@ -2,7 +2,7 @@ using Discord;
 
 namespace DiscordBots.BoredBot
 {
-    public static class BoredBotCommands
+    public static class CommandBuilders
     {
         public static SlashCommandBuilder[] Commands =>
             [

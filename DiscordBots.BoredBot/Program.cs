@@ -21,7 +21,7 @@ public static class Program
 
         builder.AddDiscordBot<BoredBot>(
             BoredBot.GetOrCreateInstance,
-            BoredBotCommands.Commands,
+            CommandBuilders.Commands,
             "Bored Bot"
         );
 
