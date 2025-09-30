@@ -3,19 +3,12 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.Core.Webhooks;
 
-public sealed class WebhookContext
+public sealed class WebhookContext(string source, JsonElement payload, ILogger logger)
 {
-    public string Source { get; }
-    public JsonElement Payload { get; }
-    public ILogger Logger { get; }
+    public string Source { get; } = source;
+    public JsonElement Payload { get; } = payload;
+    public ILogger Logger { get; } = logger;
     public IDictionary<object, object?> Items { get; } = new Dictionary<object, object?>();
-
-    public WebhookContext(string source, JsonElement payload, ILogger logger)
-    {
-        Source = source;
-        Payload = payload;
-        Logger = logger;
-    }
 
     public void Set(object key, object? value) => Items[key] = value;
 

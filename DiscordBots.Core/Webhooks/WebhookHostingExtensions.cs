@@ -1,13 +1,10 @@
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-#if NET8_0_OR_GREATER
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-#endif
 
 namespace DiscordBots.Core.Webhooks;
 
@@ -22,7 +19,6 @@ public static class WebhookHostingExtensions
         return builder;
     }
 
-#if NET8_0_OR_GREATER
     public static void MapWebhookEndpoints(this WebApplication app)
     {
         var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Webhooks");
@@ -52,7 +48,9 @@ public static class WebhookHostingExtensions
                         request.Body,
                         cancellationToken: ct
                     );
+
                     var result = await dispatcher.DispatchAsync(source, doc.RootElement, ct);
+
                     response.StatusCode = result.Handled
                         ? StatusCodes.Status200OK
                         : StatusCodes.Status202Accepted;
@@ -96,5 +94,4 @@ public static class WebhookHostingExtensions
             }
         );
     }
-#endif
-}
+};
