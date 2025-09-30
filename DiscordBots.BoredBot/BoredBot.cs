@@ -44,6 +44,8 @@ namespace DiscordBots.BoredBot
 
         public void SetOpenAIClient(IOpenAIClient client) => _openAI = client;
 
+        internal DiscordSocketClient? GetClient() => _client;
+
         protected override async Task OnSlashCommandAsync(SocketSlashCommand command)
         {
             if (_bookStack is null || _openAI is null)
