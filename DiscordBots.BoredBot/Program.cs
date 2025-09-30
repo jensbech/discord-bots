@@ -1,8 +1,9 @@
+using System.Text.Json;
 using DiscordBots.BookStack;
 using DiscordBots.Core;
-using DiscordBots.Core.Webhooks;
 using DiscordBots.OpenAI;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,8 +21,7 @@ public static class Program
         builder.Services.AddBookStack(builder.Configuration);
         builder.Services.AddOpenAI(builder.Configuration);
         builder.Services.AddHostedService<ServiceInitializer>();
-        builder.Services.AddWebhookProcessing(builder.Configuration);
-        builder.Services.AddSingleton<IWebhookHandler, TestWebhookHandler>();
+        // Webhooks previously used a dispatcher + handlers. Simplified to a single endpoint below.
 
         builder.AddDiscordBot<BoredBot>(
             BoredBot.GetOrCreateInstance,
@@ -30,7 +30,35 @@ public static class Program
         );
 
         var app = builder.Build();
-        app.MapWebhookEndpoints();
+
+        // Minimal webhook endpoint: POST /webhooks/newpost
+        // Body: arbitrary JSON forwarded to discord channel (TODO: implement actual posting logic)
+        app.MapPost(
+            "/webhooks/newpost",
+            async (HttpRequest request, ILoggerFactory lf) =>
+            {
+                var logger = lf.CreateLogger("NewPostWebhook");
+                try
+                {
+                    using var doc = await JsonDocument.ParseAsync(request.Body);
+                    logger.LogInformation(
+                        "Received newpost webhook: {Json}",
+                        doc.RootElement.ToString()
+                    );
+                    // TODO: Add logic to send a message to a channel if needed.
+                    return Results.Ok(new { status = "ok" });
+                }
+                catch (JsonException)
+                {
+                    return Results.BadRequest(new { error = "invalid_json" });
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Unhandled error processing newpost webhook");
+                    return Results.StatusCode(500);
+                }
+            }
+        );
 
         await app.RunAsync();
     }
