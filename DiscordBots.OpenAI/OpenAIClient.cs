@@ -10,8 +10,8 @@ namespace DiscordBots.OpenAI;
 
 public interface IOpenAIClient
 {
-    Task<string?> ChatAsync(string question);
-    Task<string?> ChatWithContextAsync(string question, IReadOnlyList<string> documents);
+    Task<string?> RulesChat(string question);
+    Task<string?> AskChat(string question, IReadOnlyList<string> documents);
 }
 
 internal sealed class OpenAIClient(
@@ -24,33 +24,18 @@ internal sealed class OpenAIClient(
     private readonly OpenAIOptions _options = options.Value;
     private readonly ILogger<OpenAIClient> _logger = logger;
 
-    public async Task<string?> ChatAsync(string question)
+    public async Task<string?> RulesChat(string question)
     {
-        var systemPrompt =
-            "You are a chatbot replying ONLY to questions about Dungeons and Dragons 5E rules. You refuse to discuss anything else but DND rules.";
-        var response = await _http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
-        return await EnsureChatAnswerString(response);
+        var systemPrompt = OpenAI.RulesChat.Get();
+        var res = await _http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
+        return await EnsureChatAnswerString(res);
     }
 
-    public async Task<string?> ChatWithContextAsync(
-        string question,
-        IReadOnlyList<string> documents
-    )
+    public async Task<string?> AskChat(string query, IReadOnlyList<string> documents)
     {
-        var systemPrompt =
-            "Write a comprehensive, well-structured answer (multiple paragraphs) summarizing and synthesizing the information. Write ALL that is required, without restraint"
-            + "Assume the reader is familiar with the setting, no need for fluff about that."
-            + "If any retrieved article does not relate to the question, omit it from your answer."
-            + "Your tone is that of a story teller, but your job is to reproduce the source material in a factual way. You may assume the reader is already familiar with the world setting";
-
-        question =
-            $"User Question: {question}\n\n Context for answering your query: {string.Join(
-            "\n\n---\n\n",
-            documents.Select((d, i) => $"Document {i + 1}:\n{d}")
-        )}";
-
-        var response = await _http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
-        return await EnsureChatAnswerString(response);
+        var (systemPrompt, question) = OpenAI.AskChat.Get(query, [.. documents]);
+        var res = await _http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
+        return await EnsureChatAnswerString(res);
     }
 
     private HttpRequestMessage ConstructCompletionRequest(string question, string? systemPrompt)

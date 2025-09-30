@@ -1,10 +1,11 @@
 using System.Text;
 using Discord.WebSocket;
 using DiscordBots.BookStack;
+using DiscordBots.BookStack.Models;
 using DiscordBots.OpenAI;
 using Microsoft.Extensions.Logging;
 
-namespace DiscordBots.BoredBot.Commands;
+namespace DiscordBots.BoredBot.Commands.Handlers;
 
 internal sealed class AskHandler(IBookStackClient bookStack, IOpenAIClient openAI)
     : ISlashCommandHandler
@@ -18,54 +19,32 @@ internal sealed class AskHandler(IBookStackClient bookStack, IOpenAIClient openA
     {
         var question =
             command.Data.Options?.FirstOrDefault(o => o.Name == "question")?.Value?.ToString()
-            ?? string.Empty;
+            ?? throw new Exception("Failed to determine user 'ask' question");
+
         await command.DeferAsync();
+
         try
         {
-            var search = await _bookStack.SearchAsync(question, count: 5);
-            if (search is null || search.Data.Count == 0)
+            var response = await _bookStack.SearchAsync(question);
+            if (response == null)
             {
                 await command.FollowupAsync($"No knowledge base results for '{question}'.");
                 logger.LogInformation("/ask {Question} => no results", question);
                 return;
             }
 
-            var docs = new List<string>();
-            foreach (var item in search.Data)
-            {
-                var pageHtml = await _bookStack.GetPageHtmlAsync(item.Url);
-                if (pageHtml is null)
-                    continue;
+            var bookstackDocuments = ConstructBookStackDocs(response.Data);
 
-                var preview = PreviewCleaner.Clean(item.PreviewHtml.Content ?? string.Empty);
-                var header = $"Title: {item.Name}\nURL: {item.Url}";
-                if (!string.IsNullOrWhiteSpace(preview))
-                {
-                    var trimmedPrev = preview.Length > 400 ? preview[..400] + "…" : preview;
-                    header += $"\nPreview: {trimmedPrev}";
-                }
-                var body = pageHtml.Length > 2500 ? pageHtml[..2500] + "…" : pageHtml;
-                docs.Add(header + "\n\n" + body);
-            }
+            var openAIAnswer = await _openAI.AskChat(question, bookstackDocuments);
 
-            if (docs.Count == 0)
-            {
-                await command.FollowupAsync("Couldn't retrieve page contents to answer.");
-                logger.LogInformation("/ask {Question} => empty docs", question);
-                return;
-            }
-
-            var answer = await _openAI.ChatWithContextAsync(question, docs);
-            if (string.IsNullOrWhiteSpace(answer))
+            if (string.IsNullOrWhiteSpace(openAIAnswer))
             {
                 await command.FollowupAsync("AI couldn't form an answer from docs.");
                 logger.LogInformation("/ask {Question} => no AI answer", question);
                 return;
             }
 
-            answer = RemoveSourcesSection(answer);
-
-            foreach (var chunk in SplitForDiscord(answer))
+            foreach (var chunk in SplitForDiscord(openAIAnswer))
             {
                 await command.FollowupAsync(chunk);
             }
@@ -79,13 +58,30 @@ internal sealed class AskHandler(IBookStackClient bookStack, IOpenAIClient openA
         }
     }
 
-    private static string RemoveSourcesSection(string answer)
+    private List<string> ConstructBookStackDocs(
+        IReadOnlyList<BookStackSearchResponse.BookStackSearchResult> results
+    )
     {
-        var lines = answer.Split('\n');
-        lines = lines
-            .Where(l => !l.TrimStart().StartsWith("Sources:", StringComparison.OrdinalIgnoreCase))
-            .ToArray();
-        return string.Join('\n', lines).Trim();
+        var docs = new List<string>();
+        foreach (var item in results)
+        {
+            var pageHtml = _bookStack.GetPageHtmlAsync(item.Url).Result;
+            if (pageHtml is null)
+                continue;
+
+            var preview = PreviewCleaner.Clean(item.PreviewHtml.Content ?? string.Empty);
+            var header = $"Title: {item.Name}\nURL: {item.Url}";
+
+            if (!string.IsNullOrWhiteSpace(preview))
+            {
+                var trimmedPrev = preview.Length > 400 ? preview[..400] + "…" : preview;
+                header += $"\nPreview: {trimmedPrev}";
+            }
+
+            var body = pageHtml.Length > 2500 ? pageHtml[..2500] + "…" : pageHtml;
+            docs.Add(header + "\n\n" + body);
+        }
+        return docs;
     }
 
     private static IEnumerable<string> SplitForDiscord(string text)

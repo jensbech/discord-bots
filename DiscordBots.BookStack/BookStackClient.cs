@@ -38,7 +38,7 @@ namespace DiscordBots.BookStack
 
             using var req = new HttpRequestMessage(HttpMethod.Get, url);
 
-            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            req.Headers.Authorization = new AuthenticationHeaderValue(
                 "Token",
                 $"{_options.ApiId}:{_options.ApiKey}"
             );
@@ -51,8 +51,9 @@ namespace DiscordBots.BookStack
                 return null;
             }
 
-            var responseContent = await res.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<BookStackSearchResponse>(responseContent);
+            return JsonSerializer.Deserialize<BookStackSearchResponse>(
+                    await res.Content.ReadAsStringAsync()
+                ) ?? null;
         }
 
         public async Task<string?> GetPageHtmlAsync(string pageUrl)

@@ -2,6 +2,7 @@ using Discord;
 using Discord.WebSocket;
 using DiscordBots.BookStack;
 using DiscordBots.BoredBot.Commands;
+using DiscordBots.BoredBot.Commands.Handlers;
 using DiscordBots.Core;
 using DiscordBots.Core.Logging;
 using DiscordBots.OpenAI;
@@ -51,7 +52,7 @@ namespace DiscordBots.BoredBot
             var list = new List<ISlashCommandHandler>
             {
                 new RollHandler(),
-                new SearchHandler(_bookStack),
+                new Search(_bookStack),
                 new ChatHandler(_openAI),
                 new AskHandler(_bookStack, _openAI),
                 new HelpHandler(),

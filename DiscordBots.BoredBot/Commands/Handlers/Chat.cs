@@ -2,7 +2,7 @@ using Discord.WebSocket;
 using DiscordBots.OpenAI;
 using Microsoft.Extensions.Logging;
 
-namespace DiscordBots.BoredBot.Commands;
+namespace DiscordBots.BoredBot.Commands.Handlers;
 
 internal sealed class ChatHandler(IOpenAIClient openAIClient) : ISlashCommandHandler
 {
@@ -16,7 +16,7 @@ internal sealed class ChatHandler(IOpenAIClient openAIClient) : ISlashCommandHan
             command.Data.Options?.FirstOrDefault(o => o.Name == "question")?.Value?.ToString()
             ?? string.Empty;
         await command.DeferAsync();
-        var response = await _openAIClient.ChatAsync(question);
+        var response = await _openAIClient.RulesChat(question);
         await command.FollowupAsync(response);
         logger.LogInformation("/chat answered");
     }

@@ -2,7 +2,7 @@ using Discord.WebSocket;
 using DiscordBots.BoredBot.Dice;
 using Microsoft.Extensions.Logging;
 
-namespace DiscordBots.BoredBot.Commands;
+namespace DiscordBots.BoredBot.Commands.Handlers;
 
 internal sealed class RollHandler : ISlashCommandHandler
 {

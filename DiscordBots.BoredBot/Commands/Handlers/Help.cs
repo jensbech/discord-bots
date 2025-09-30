@@ -1,7 +1,7 @@
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 
-namespace DiscordBots.BoredBot.Commands;
+namespace DiscordBots.BoredBot.Commands.Handlers;
 
 internal sealed class HelpHandler : ISlashCommandHandler
 {
