@@ -21,8 +21,6 @@ public static class Program
         builder.Services.AddBookStack(builder.Configuration);
         builder.Services.AddOpenAI(builder.Configuration);
         builder.Services.AddHostedService<ServiceInitializer>();
-        // Webhooks previously used a dispatcher + handlers. Simplified to a single endpoint below.
-
         builder.AddDiscordBot<BoredBot>(
             BoredBot.GetOrCreateInstance,
             CommandBuilders.Commands,
@@ -31,8 +29,6 @@ public static class Program
 
         var app = builder.Build();
 
-        // Minimal webhook endpoint: POST /webhooks/newpost
-        // Body: arbitrary JSON forwarded to discord channel (TODO: implement actual posting logic)
         app.MapPost(
             "/webhooks/newpost",
             async (HttpRequest request, ILoggerFactory lf) =>
@@ -41,16 +37,7 @@ public static class Program
                 try
                 {
                     using var doc = await JsonDocument.ParseAsync(request.Body);
-                    logger.LogInformation(
-                        "Received newpost webhook: {Json}",
-                        doc.RootElement.ToString()
-                    );
-                    // TODO: Add logic to send a message to a channel if needed.
                     return Results.Ok(new { status = "ok" });
-                }
-                catch (JsonException)
-                {
-                    return Results.BadRequest(new { error = "invalid_json" });
                 }
                 catch (Exception ex)
                 {
