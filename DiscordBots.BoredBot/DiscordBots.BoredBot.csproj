@@ -11,4 +11,7 @@
     <ProjectReference Include="..\DiscordBots.BookStack\DiscordBots.BookStack.csproj" />
     <ProjectReference Include="..\DiscordBots.OpenAI\DiscordBots.OpenAI.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 </Project>
