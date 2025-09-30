@@ -1,10 +1,10 @@
-This repository houses my setup for Discord bots.
+This is an app for my Discord bots.
 
-Bot commands:
-- `/search`: Query articles from our [Bored Gods Wiki](https://wiki.boredgods.no/) (D&D campaign).
-- `/rules`: Ask AI about DnD rules.
-- `/ask`: Ask about source material from the wiki. Article results from initial key word query is fed into AI to provide the user with an accurate answer.
-- `/roll`: Roll dice (e.g. `/roll 2d20+3`).
+Discord commands:
+- `/search` articles from our [Bored Gods Wiki](https://wiki.boredgods.no/) (D&D campaign).
+- `/rules` to query AI about DnD rules.
+- `/ask` about source material from the wiki. Article results from initial key word query is fed into AI to provide the user with an accurate answer.
+- `/roll` dice (e.g. `/roll 2d20+3`).
 
 Webhook:
 - Posts to Discord channel every time a new Wiki article is created.
