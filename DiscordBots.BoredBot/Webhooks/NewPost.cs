@@ -11,62 +11,68 @@ public class NewPost
 {
     public static async Task<IResult> SendAsync(HttpRequest request, IServiceProvider sp)
     {
-        var loggerFactory = LoggerFactory.Create(builder => { });
-        var logger = loggerFactory.CreateLogger("NewPost");
+        var logger =
+            sp.GetService<ILogger<NewPost>>()
+            ?? LoggerFactory.Create(b => { }).CreateLogger<NewPost>();
+
         try
         {
-            var body = await JsonDocument.ParseAsync(request.Body);
-            var url = body.RootElement.GetProperty("url").GetString();
+            var (url, author, title) = await GetMessageContentAsync(request);
 
-            var author = body
-                .RootElement.GetProperty("triggered_by")
-                .GetProperty("name")
-                .GetString();
-
-            var title = body
-                .RootElement.GetProperty("current_revision")
-                .GetProperty("name")
-                .GetString();
-
-            var embed = new EmbedBuilder
-            {
-                Title = title,
-                Author = new EmbedAuthorBuilder { Name = author },
-                Description = "A new post has appeared in the Wiki!",
-                Url = url,
-            }.Build();
+            var embed = new EmbedBuilder()
+                .WithTitle(title)
+                .WithAuthor(author)
+                .WithDescription("A new post has appeared in the Wiki!")
+                .WithUrl(url)
+                .Build();
 
             var bookStackOpts =
-                sp.GetService<Microsoft.Extensions.Options.IOptions<BookStackOptions>>()?.Value;
+                sp.GetService<Microsoft.Extensions.Options.IOptions<BookStackOptions>>()?.Value
+                ?? throw new InvalidOperationException("BookStack options not configured");
 
-            var client = BoredBot.Instance?.GetClient();
+            if (!ulong.TryParse(bookStackOpts.ChannelId, out var channelId))
+                throw new InvalidOperationException("Channel Id is not a valid ulong");
 
-            if (client is null)
-            {
-                return Results.StatusCode(503);
-            }
+            var botClient =
+                BoredBot.Instance?.GetClient()
+                ?? throw new InvalidOperationException("Discord client is not available");
 
-            ITextChannel? target = null;
+            var channelTarget =
+                botClient.GetChannel(channelId) as ITextChannel
+                ?? throw new InvalidOperationException("Could not determine target text channel");
 
-            var channelIdStr =
-                bookStackOpts?.ChannelId ?? throw new Exception("Channel Id not set");
-
-            if (!ulong.TryParse(channelIdStr, out var channelId))
-            {
-                throw new Exception("Channel Id is not a valid ulong");
-            }
-
-            target =
-                client.GetChannel(channelId) as ITextChannel
-                ?? throw new Exception("Could not determine channel");
-
-            await target.SendMessageAsync(text: null, embed: embed);
+            await channelTarget.SendMessageAsync(text: null, embed: embed);
             return Results.Ok();
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unhandled error processing newpost webhook");
+            logger.LogError(ex, "Unhandled error processing NewPost webhook");
             return Results.StatusCode(500);
         }
+    }
+
+    private static async Task<(string url, string author, string title)> GetMessageContentAsync(
+        HttpRequest request
+    )
+    {
+        await using var stream = request.Body;
+        using var doc = await JsonDocument.ParseAsync(stream);
+
+        var root = doc.RootElement;
+
+        var url =
+            root.GetProperty("url").GetString() ?? throw new InvalidOperationException(
+                "url is null"
+            );
+
+        var author =
+            root.GetProperty("triggered_by").GetProperty("name").GetString()
+            ?? throw new InvalidOperationException("triggered_by.name is null");
+
+        var title =
+            root.GetProperty("current_revision").GetProperty("name").GetString()
+            ?? throw new InvalidOperationException("current_revision.name is null");
+
+        return (url, author, title);
     }
 }
