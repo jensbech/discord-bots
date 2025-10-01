@@ -33,7 +33,12 @@ namespace DiscordBots.BookStack
                 ?? throw new InvalidOperationException(
                     "BOOKSTACK_API_KEY / BookStack:ApiKey is required"
                 );
-            var guildId = GetEnvironmentValue("GuildId", "BOOKSTACK_GUILD_ID");
+            var guildId =
+                GetEnvironmentValue("GuildId", "BOOKSTACK_GUILD_ID")
+                ?? throw new InvalidOperationException("BOOKSTACK_GUILD_ID is required");
+            var channelId =
+                GetEnvironmentValue("ChannelId", "BOOKSTACK_CHANNEL_ID")
+                ?? throw new InvalidOperationException("BOOKSTACK_CHANNEL_ID is required");
 
             var trimmed = baseUrl.TrimEnd('/');
             if (!trimmed.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
@@ -48,6 +53,7 @@ namespace DiscordBots.BookStack
                 o.ApiId = apiId;
                 o.ApiKey = apiKey;
                 o.GuildId = guildId;
+                o.ChannelId = channelId;
             });
 
             _ = services

@@ -69,20 +69,5 @@ namespace DiscordBots.BoredBot
             await command.RespondAsync("Unknown command.", ephemeral: true);
             _logger.LogSlashError(command, "Unhandled command");
         }
-
-        private async Task<(string Url, string? Text)> FetchPageAsync(string url)
-        {
-            if (_bookStack is null)
-                return (url, null);
-            try
-            {
-                var text = await _bookStack.GetPageHtmlAsync(url);
-                return (url, text);
-            }
-            catch
-            {
-                return (url, null);
-            }
-        }
     }
 }

@@ -1,11 +1,11 @@
 using System.Text.Json;
+using Discord;
 using DiscordBots.BookStack;
 using DiscordBots.Core;
 using DiscordBots.OpenAI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot;
@@ -29,21 +29,11 @@ public static class Program
 
         var app = builder.Build();
 
-        app.MapPost(
-            "/webhooks/newpost",
-            async (HttpRequest request, ILoggerFactory lf) =>
+        _ = app.MapPost(
+            "/webhooks/new_post",
+            (HttpRequest request, IServiceProvider sp) =>
             {
-                var logger = lf.CreateLogger("NewPostWebhook");
-                try
-                {
-                    using var doc = await JsonDocument.ParseAsync(request.Body);
-                    return Results.Ok(new { status = "ok" });
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Unhandled error processing newpost webhook");
-                    return Results.StatusCode(500);
-                }
+                _ = Webhooks.NewPost.SendAsync(request, sp);
             }
         );
 
