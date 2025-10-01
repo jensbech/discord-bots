@@ -2,8 +2,8 @@ using System.Text.Json;
 using Discord;
 using DiscordBots.BookStack;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DiscordBots.BoredBot.Webhooks;
 
@@ -11,16 +11,13 @@ public class NewPost
 {
     public static async Task<IResult> SendAsync(
         HttpRequest request,
-        IServiceProvider serviceProvider
+        ILogger<NewPost> logger,
+        IOptions<BookStackOptions> options
     )
     {
-        var logger =
-            serviceProvider.GetService<ILogger<NewPost>>()
-            ?? LoggerFactory.Create(b => { }).CreateLogger<NewPost>();
-
         try
         {
-            var (url, author, title) = await GetMessageContentAsync(request);
+            var (url, author, title) = GetMessageContent(request);
 
             var embed = new EmbedBuilder()
                 .WithTitle(title)
@@ -29,24 +26,14 @@ public class NewPost
                 .WithUrl(url)
                 .Build();
 
-            var bookStackOpts =
-                serviceProvider
-                    .GetService<Microsoft.Extensions.Options.IOptions<BookStackOptions>>()
-                    ?.Value
-                ?? throw new InvalidOperationException("BookStack options not configured");
+            ulong guildId = ulong.Parse(options.Value.GuildId);
+            ulong channelId = ulong.Parse(options.Value.ChannelId);
 
-            if (!ulong.TryParse(bookStackOpts.ChannelId, out var channelId))
-                throw new InvalidOperationException("Channel Id is not a valid ulong");
+            var botClient = BoredBot.Instance.GetClient();
+            var guild = botClient.GetGuild(guildId);
+            var channel = guild.GetTextChannel(channelId);
 
-            var botClient =
-                BoredBot.Instance?.GetClient()
-                ?? throw new InvalidOperationException("Discord client is not available");
-
-            var channelTarget =
-                botClient.GetChannel(channelId) as ITextChannel
-                ?? throw new InvalidOperationException("Could not determine target text channel");
-
-            await channelTarget.SendMessageAsync(text: null, embed: embed);
+            await channel.SendMessageAsync(text: null, embed: embed);
             return Results.Ok();
         }
         catch (Exception ex)
@@ -56,14 +43,10 @@ public class NewPost
         }
     }
 
-    private static async Task<(string url, string author, string title)> GetMessageContentAsync(
-        HttpRequest request
-    )
+    private static (string url, string author, string title) GetMessageContent(HttpRequest request)
     {
-        await using var stream = request.Body;
-        using var doc = await JsonDocument.ParseAsync(stream);
-
-        var root = doc.RootElement;
+        var body = JsonDocument.Parse(request.Body);
+        var root = body.RootElement;
 
         var url =
             root.GetProperty("url").GetString() ?? throw new InvalidOperationException(

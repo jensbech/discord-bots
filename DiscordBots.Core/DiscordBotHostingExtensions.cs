@@ -22,18 +22,4 @@ public static class DiscordBotHostingExtensions
 
         return builder;
     }
-
-    public static IHost DiscordBotBuilder<TBot>(
-        string[] args,
-        Func<BotEnvironmentVariables, SlashCommandBuilder[], ILogger<TBot>, Task<TBot>> botFactory,
-        SlashCommandBuilder[] commands,
-        string botName
-    )
-        where TBot : DiscordBot
-    {
-        var builder = Host.CreateApplicationBuilder(args);
-        builder.Logging.AddConsole();
-        builder.AddDiscordBot(botFactory, commands, botName);
-        return builder.Build();
-    }
 }

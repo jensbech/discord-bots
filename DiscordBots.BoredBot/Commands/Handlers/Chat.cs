@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands.Handlers;
 
-internal sealed class ChatHandler(IOpenAIClient openAIClient) : ISlashCommandHandler
+internal sealed class Chat(IOpenAIClient openAIClient) : ISlashCommandHandler
 {
     private readonly IOpenAIClient _openAIClient = openAIClient;
 

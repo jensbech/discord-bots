@@ -5,14 +5,14 @@ namespace DiscordBots.BookStack
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddBookStack(
+        public static IServiceCollection AddBookStackService(
             this IServiceCollection services,
-            IConfiguration config
+            IConfiguration appBuilderConfiguration
         )
         {
             string? GetEnvironmentValue(string keySuffix, string envVar)
             {
-                var value = config[$"{BookStackOptions.SectionName}:{keySuffix}"];
+                var value = appBuilderConfiguration[$"{BookStackOptions.SectionName}:{keySuffix}"];
                 return string.IsNullOrWhiteSpace(value)
                     ? Environment.GetEnvironmentVariable(envVar)
                     : value;
@@ -73,8 +73,6 @@ namespace DiscordBots.BookStack
                     client.DefaultRequestVersion = new Version(1, 1);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                 });
-            // .SetHandlerLifetime(TimeSpan.FromSeconds(1));
-
             return services;
         }
     }

@@ -7,8 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands.Handlers;
 
-internal sealed class AskHandler(IBookStackClient bookStack, IOpenAIClient openAI)
-    : ISlashCommandHandler
+internal sealed class Ask(IBookStackClient bookStack, IOpenAIClient openAI) : ISlashCommandHandler
 {
     private readonly IBookStackClient _bookStack = bookStack;
     private readonly IOpenAIClient _openAI = openAI;

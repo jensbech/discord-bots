@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands.Handlers;
 
-internal sealed class HelpHandler : ISlashCommandHandler
+internal sealed class Help : ISlashCommandHandler
 {
     public string Name => "help";
 

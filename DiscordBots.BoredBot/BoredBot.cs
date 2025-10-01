@@ -12,7 +12,7 @@ namespace DiscordBots.BoredBot
 {
     public partial class BoredBot : DiscordBot
     {
-        private static BoredBot? _instance;
+        private static BoredBot? instance;
 
         private BoredBot(string token, SlashCommandBuilder[] commands, ILogger<BoredBot> logger)
             : base(token, commands, logger) { }
@@ -23,15 +23,15 @@ namespace DiscordBots.BoredBot
             ILogger<BoredBot> logger
         )
         {
-            if (_instance == null)
+            if (instance == null)
             {
-                _instance = new BoredBot(envVars.DiscordBotToken, commands, logger);
-                await _instance.InitializeAsync("Bored Bot");
+                instance = new BoredBot(envVars.DiscordBotToken, commands, logger);
+                await instance.InitializeAsync("Bored Bot");
             }
-            return _instance;
+            return instance;
         }
 
-        public static BoredBot? Instance => _instance;
+        public static BoredBot Instance => instance ?? throw new Exception("");
 
         private IBookStackClient? _bookStack;
         private IOpenAIClient? _openAI;
@@ -44,22 +44,22 @@ namespace DiscordBots.BoredBot
 
         public void SetOpenAIClient(IOpenAIClient client) => _openAI = client;
 
-        internal DiscordSocketClient? GetClient() => _client;
+        internal DiscordSocketClient GetClient() => _client;
 
         protected override async Task OnSlashCommandAsync(SocketSlashCommand command)
         {
             if (_bookStack is null || _openAI is null)
                 throw new InvalidOperationException("Dependencies not set before usage.");
 
-            var list = new List<ISlashCommandHandler>
+            var handlers = new List<ISlashCommandHandler>
             {
-                new RollHandler(),
+                new Roll(),
                 new Search(_bookStack),
-                new ChatHandler(_openAI),
-                new AskHandler(_bookStack, _openAI),
-                new HelpHandler(),
+                new Chat(_openAI),
+                new Ask(_bookStack, _openAI),
+                new Help(),
             };
-            _handlers = list.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
+            _handlers = handlers.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
 
             if (_handlers.TryGetValue(command.CommandName, out var handler))
             {
