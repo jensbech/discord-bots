@@ -9,10 +9,13 @@ namespace DiscordBots.BoredBot.Webhooks;
 
 public class NewPost
 {
-    public static async Task<IResult> SendAsync(HttpRequest request, IServiceProvider sp)
+    public static async Task<IResult> SendAsync(
+        HttpRequest request,
+        IServiceProvider serviceProvider
+    )
     {
         var logger =
-            sp.GetService<ILogger<NewPost>>()
+            serviceProvider.GetService<ILogger<NewPost>>()
             ?? LoggerFactory.Create(b => { }).CreateLogger<NewPost>();
 
         try
@@ -27,7 +30,9 @@ public class NewPost
                 .Build();
 
             var bookStackOpts =
-                sp.GetService<Microsoft.Extensions.Options.IOptions<BookStackOptions>>()?.Value
+                serviceProvider
+                    .GetService<Microsoft.Extensions.Options.IOptions<BookStackOptions>>()
+                    ?.Value
                 ?? throw new InvalidOperationException("BookStack options not configured");
 
             if (!ulong.TryParse(bookStackOpts.ChannelId, out var channelId))
