@@ -43,7 +43,7 @@ namespace DiscordBots.BoredBot
 
         public void SetOpenAiClient(IOpenAiClient client) => _openAi = client;
 
-        internal DiscordSocketClient GetClient() => _client;
+        internal DiscordSocketClient GetClient() => Client;
 
         protected override async Task OnSlashCommandAsync(SocketSlashCommand command)
         {
@@ -62,11 +62,11 @@ namespace DiscordBots.BoredBot
 
             if (_handlers.TryGetValue(command.CommandName, out var handler))
             {
-                await handler.HandleAsync(command, _logger);
+                await handler.HandleAsync(command, Logger);
                 return;
             }
             await command.RespondAsync("Unknown command.", ephemeral: true);
-            _logger.LogSlashError(command, "Unhandled command");
+            Logger.LogSlashError(command, "Unhandled command");
         }
     }
 }

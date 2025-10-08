@@ -8,14 +8,14 @@ namespace DiscordBots.Core
     public abstract class DiscordBot
     {
         private readonly string _token;
-        protected readonly DiscordSocketClient _client;
+        protected readonly DiscordSocketClient Client;
         private readonly SlashCommandBuilder[] _commands;
         protected IReadOnlyList<SlashCommandBuilder> Commands => _commands;
-        protected readonly ILogger _logger;
+        protected readonly ILogger Logger;
 
         protected DiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
         {
-            _client = new DiscordSocketClient(
+            Client = new DiscordSocketClient(
                 new DiscordSocketConfig
                 {
                     GatewayIntents =
@@ -26,8 +26,8 @@ namespace DiscordBots.Core
             );
             _token = token;
             _commands = commands;
-            _logger = logger;
-            _client.MessageReceived += LogIncomingMessage;
+            Logger = logger;
+            Client.MessageReceived += LogIncomingMessage;
         }
 
         private async Task LoginAsync()
@@ -39,8 +39,8 @@ namespace DiscordBots.Core
 
             try
             {
-                await _client.LoginAsync(TokenType.Bot, _token);
-                await _client.StartAsync();
+                await Client.LoginAsync(TokenType.Bot, _token);
+                await Client.StartAsync();
             }
             catch (Exception error)
             {
@@ -52,9 +52,9 @@ namespace DiscordBots.Core
         {
             try
             {
-                var commandData = _commands.Select(cmd => cmd.Build()).ToArray();
-                await _client.Rest.BulkOverwriteGlobalCommands(commandData);
-                _logger.LogInformation(
+                ApplicationCommandProperties[] commandData = _commands.Select(cmd => cmd.Build()).ToArray<ApplicationCommandProperties>();
+                await Client.Rest.BulkOverwriteGlobalCommands(commandData);
+                Logger.LogInformation(
                     "Registered {CommandCount} global slash command(s)",
                     commandData.Length
                 );
@@ -71,38 +71,38 @@ namespace DiscordBots.Core
         {
             if (message.Author.IsBot)
                 return Task.CompletedTask;
-            _logger.LogIncomingUserMessage(message);
+            Logger.LogIncomingUserMessage(message);
             return Task.CompletedTask;
         }
 
         protected async Task InitializeAsync(string botName)
         {
-            _logger.LogInformation("Initializing bot '{BotName}'...", botName);
+            Logger.LogInformation("Initializing bot '{BotName}'...", botName);
             try
             {
                 await LoginAsync();
 
-                _client.Ready += async () =>
+                Client.Ready += async () =>
                 {
                     try
                     {
                         await RegisterCommandsAsync();
-                        _logger.LogInformation("{BotName} is ready! :)", botName);
+                        Logger.LogInformation("{BotName} is ready! :)", botName);
                     }
                     catch (Exception inner)
                     {
-                        _logger.LogError(
+                        Logger.LogError(
                             inner,
                             "Initialization error (post-ready) for {BotName}",
                             botName
                         );
                     }
                 };
-                _client.SlashCommandExecuted += OnSlashCommandInternalAsync;
+                Client.SlashCommandExecuted += OnSlashCommandInternalAsync;
             }
             catch (Exception error)
             {
-                _logger.LogError(error, "Initialization error for {BotName}", botName);
+                Logger.LogError(error, "Initialization error for {BotName}", botName);
             }
         }
 
@@ -114,9 +114,9 @@ namespace DiscordBots.Core
             }
             catch (Exception ex)
             {
-                _logger.LogError(
+                Logger.LogError(
                     ex,
-                    "Unnhandled exception in slash command handler for /{Command}",
+                    "Unhandled exception in slash command handler for /{Command}",
                     command.CommandName
                 );
 
@@ -156,11 +156,11 @@ namespace DiscordBots.Core
             var missing = requiredVars.Where(name =>
                 Environment.GetEnvironmentVariable(name) is null
             );
-            if (missing.Any())
-                throw new Exception($"Missing environment variables: {string.Join(", ", missing)}");
+            var enumerable = missing as string[] ?? missing.ToArray();
+            if (enumerable.Any())
+                throw new Exception($"Missing environment variables: {string.Join(", ", enumerable)}");
             return new BotEnvironmentVariables(
-                Environment.GetEnvironmentVariable(requiredVars[0])!,
-                Environment.GetEnvironmentVariable(requiredVars[1])!
+                Environment.GetEnvironmentVariable(requiredVars[0])!
             );
         }
     }
@@ -168,12 +168,10 @@ namespace DiscordBots.Core
     public sealed class BotEnvironmentVariables
     {
         public string DiscordBotToken { get; }
-        public string ApplicationId { get; }
 
-        internal BotEnvironmentVariables(string discordBotToken, string applicationId)
+        internal BotEnvironmentVariables(string discordBotToken)
         {
             DiscordBotToken = discordBotToken;
-            ApplicationId = applicationId;
         }
     }
 }
