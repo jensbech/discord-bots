@@ -7,14 +7,12 @@ namespace DiscordBots.OpenAI;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddOpenAI(
-        this IServiceCollection services,
-        IConfiguration config
-    )
+    public static void AddOpenAi(this IServiceCollection services,
+        IConfiguration config)
     {
         string? Get(string keySuffix, string envVar)
         {
-            var value = config[$"{OpenAIOptions.SectionName}:{keySuffix}"];
+            var value = config[$"{OpenAiOptions.SectionName}:{keySuffix}"];
             return string.IsNullOrWhiteSpace(value)
                 ? Environment.GetEnvironmentVariable(envVar)
                 : value;
@@ -33,47 +31,43 @@ public static class ServiceCollectionExtensions
         var org = Get("Organization", "OPENAI_ORG");
         var project = Get("Project", "OPENAI_PROJECT");
 
-        services.Configure<OpenAIOptions>(options =>
+        services.Configure<OpenAiOptions>(options =>
         {
             options.ApiKey = apiKey;
             options.Model = model;
-            options.BaseUrl = baseUrl;
             options.MaxTokens = maxTokens;
-            options.Organization = org;
             options.Project = project;
         });
 
-        services.AddHttpClient<IOpenAIClient, OpenAIClient>(client =>
+        services.AddHttpClient<IOpenAiClient, OpenAiClient>(client =>
         {
             client.BaseAddress = new Uri(baseUrl);
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Add("User-Agent", "DiscordBots/OpenAIClient");
         });
 
-        services.AddSingleton<IHostedService>(sp => new OpenAIConfigLogger(
-            sp.GetRequiredService<ILogger<OpenAIConfigLogger>>(),
+        services.AddSingleton<IHostedService>(sp => new OpenAiConfigLogger(
+            sp.GetRequiredService<ILogger<OpenAiConfigLogger>>(),
             baseUrl,
             model,
             apiKey,
             org,
             project
         ));
-
-        return services;
     }
 }
 
-internal sealed class OpenAIConfigLogger : IHostedService
+internal sealed class OpenAiConfigLogger : IHostedService
 {
-    private readonly ILogger<OpenAIConfigLogger> _logger;
+    private readonly ILogger<OpenAiConfigLogger> _logger;
     private readonly string _baseUrl;
     private readonly string _model;
     private readonly string _apiKey;
     private readonly string? _org;
     private readonly string? _project;
 
-    public OpenAIConfigLogger(
-        ILogger<OpenAIConfigLogger> logger,
+    public OpenAiConfigLogger(
+        ILogger<OpenAiConfigLogger> logger,
         string baseUrl,
         string model,
         string apiKey,

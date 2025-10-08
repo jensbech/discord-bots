@@ -1,37 +1,23 @@
 using DiscordBots.BookStack;
 using DiscordBots.OpenAI;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot;
 
 internal sealed class ServiceInitializer(
     IBookStackClient bookStackClient,
-    IOpenAIClient openAIClient,
-    ILogger<ServiceInitializer> logger
+    IOpenAiClient openAiClient
 ) : IHostedService
 {
-    private readonly IBookStackClient _bookStackClient = bookStackClient;
-    private readonly IOpenAIClient _openAIClient = openAIClient;
-    private readonly ILogger<ServiceInitializer> _logger = logger;
-
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (BoredBot.Instance is null)
-        {
-            _logger.LogDebug("BoredBot instance not yet created when service initializer started");
-        }
-        else
-        {
-            BoredBot.Instance.SetBookStackClient(_bookStackClient);
-            BoredBot.Instance.SetOpenAIClient(_openAIClient);
-            _logger.LogInformation("BookStack and OpenAI clients injected into BoredBot");
-        }
-
+        BoredBot.Instance.SetBookStackClient(bookStackClient);
+        BoredBot.Instance.SetOpenAiClient(openAiClient);
+        
         _ = Task.Run(
             async () =>
             {
-                int attempts = 0;
+                var attempts = 0;
                 while (BoredBot.Instance is null && attempts < 10)
                 {
                     await Task.Delay(500, cancellationToken);
@@ -39,12 +25,8 @@ internal sealed class ServiceInitializer(
                 }
                 if (BoredBot.Instance is not null)
                 {
-                    BoredBot.Instance.SetBookStackClient(_bookStackClient);
-                    BoredBot.Instance.SetOpenAIClient(_openAIClient);
-                    _logger.LogInformation(
-                        "BookStack and OpenAI clients injected into BoredBot after {Attempts} attempts",
-                        attempts
-                    );
+                    BoredBot.Instance.SetBookStackClient(bookStackClient);
+                    BoredBot.Instance.SetOpenAiClient(openAiClient);
                 }
             },
             cancellationToken

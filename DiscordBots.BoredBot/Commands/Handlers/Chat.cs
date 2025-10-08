@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands.Handlers;
 
-internal sealed class Chat(IOpenAIClient openAIClient) : ISlashCommandHandler
+internal sealed class Chat(IOpenAiClient openAiClient) : ISlashCommandHandler
 {
-    private readonly IOpenAIClient _openAIClient = openAIClient;
+    private readonly IOpenAiClient _openAiClient = openAiClient;
 
     public string Name => "chat";
 
@@ -15,8 +15,10 @@ internal sealed class Chat(IOpenAIClient openAIClient) : ISlashCommandHandler
         var question =
             command.Data.Options?.FirstOrDefault(o => o.Name == "question")?.Value?.ToString()
             ?? string.Empty;
+        
         await command.DeferAsync();
-        var response = await _openAIClient.RulesChat(question);
+        
+        var response = await _openAiClient.RulesChat(question);
         await command.FollowupAsync(response);
         logger.LogInformation("/chat answered");
     }

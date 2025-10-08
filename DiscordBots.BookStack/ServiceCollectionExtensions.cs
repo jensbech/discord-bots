@@ -5,34 +5,27 @@ namespace DiscordBots.BookStack
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddBookStackService(
-            this IServiceCollection services,
-            IConfiguration appBuilderConfiguration
-        )
+        public static void AddBookStackService(this IServiceCollection services,
+            IConfiguration appBuilderConfiguration)
         {
-            string? GetEnvironmentValue(string keySuffix, string envVar)
-            {
-                var value = appBuilderConfiguration[$"{BookStackOptions.SectionName}:{keySuffix}"];
-                return string.IsNullOrWhiteSpace(value)
-                    ? Environment.GetEnvironmentVariable(envVar)
-                    : value;
-            }
-
             var baseUrl =
                 GetEnvironmentValue("BaseUrl", "BOOKSTACK_BASE_URL")
                 ?? throw new InvalidOperationException(
                     "BOOKSTACK_BASE_URL / BookStack:BaseUrl is required"
                 );
+            
             var apiId =
                 GetEnvironmentValue("ApiId", "BOOKSTACK_API_ID")
                 ?? throw new InvalidOperationException(
                     "BOOKSTACK_API_ID / BookStack:ApiId is required"
                 );
+            
             var apiKey =
                 GetEnvironmentValue("ApiKey", "BOOKSTACK_API_KEY")
                 ?? throw new InvalidOperationException(
                     "BOOKSTACK_API_KEY / BookStack:ApiKey is required"
                 );
+            
             var guildId =
                 GetEnvironmentValue("GuildId", "BOOKSTACK_GUILD_ID")
                 ?? throw new InvalidOperationException("BOOKSTACK_GUILD_ID is required");
@@ -41,6 +34,7 @@ namespace DiscordBots.BookStack
                 ?? throw new InvalidOperationException("BOOKSTACK_CHANNEL_ID is required");
 
             var trimmed = baseUrl.TrimEnd('/');
+            
             if (!trimmed.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
             {
                 trimmed += "/api";
@@ -73,7 +67,15 @@ namespace DiscordBots.BookStack
                     client.DefaultRequestVersion = new Version(1, 1);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                 });
-            return services;
+            return;
+
+            string? GetEnvironmentValue(string keySuffix, string envVar)
+            {
+                var value = appBuilderConfiguration[$"{BookStackOptions.SectionName}:{keySuffix}"];
+                return string.IsNullOrWhiteSpace(value)
+                    ? Environment.GetEnvironmentVariable(envVar)
+                    : value;
+            }
         }
     }
 }

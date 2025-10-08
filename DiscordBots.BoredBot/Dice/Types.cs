@@ -18,7 +18,7 @@ namespace DiscordBots.BoredBot.Dice
 
     public class DiceParseResult
     {
-        public List<int> Dices { get; set; } = [];
-        public int Modifier { get; set; }
+        public List<int> Dices { get; init; } = [];
+        public int Modifier { get; init; }
     }
 }

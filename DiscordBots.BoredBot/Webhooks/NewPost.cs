@@ -26,8 +26,8 @@ public class NewPost
                 .WithUrl(url)
                 .Build();
 
-            ulong guildId = ulong.Parse(options.Value.GuildId);
-            ulong channelId = ulong.Parse(options.Value.ChannelId);
+            var guildId = ulong.Parse(options.Value.GuildId);
+            var channelId = ulong.Parse(options.Value.ChannelId);
 
             var botClient = BoredBot.Instance.GetClient();
             var guild = botClient.GetGuild(guildId);

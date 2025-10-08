@@ -1,6 +1,6 @@
 namespace DiscordBots.BoredBot.Dice
 {
-    public class Roller
+    public abstract class Roller
     {
         public static bool TryHandleRollCommand(string textInput, out string resultMessage)
         {
@@ -52,7 +52,7 @@ namespace DiscordBots.BoredBot.Dice
             );
         }
 
-        public static (int RollResult, string? Message) Roll(int diceInput)
+        private static (int RollResult, string? Message) Roll(int diceInput)
         {
             var allowedDice = new[]
             {
@@ -118,10 +118,10 @@ namespace DiscordBots.BoredBot.Dice
 
             var lines = new List<string> { "🎲 Dice Rolls:" };
 
-            int width = diceRolls.Max(r => r.sides.ToString().Length);
-            for (int i = 0; i < diceRolls.Count; i++)
+            var width = diceRolls.Max(r => r.sides.ToString().Length);
+            
+            foreach (var (sides, value, msg) in diceRolls)
             {
-                var (sides, value, msg) = diceRolls[i];
                 var sideLabel = ($"d{sides}").PadLeft(width + 1);
                 var msgPart = string.IsNullOrWhiteSpace(msg) ? string.Empty : $"  **{msg}**";
                 var emoji = GetResultEmoji(sides, value);

@@ -1,4 +1,5 @@
 using DiscordBots.BookStack;
+using DiscordBots.BoredBot.Commands;
 using DiscordBots.BoredBot.Webhooks;
 using DiscordBots.Core;
 using DiscordBots.OpenAI;
@@ -19,7 +20,8 @@ public static class Program
         appBuilder.Logging.SetMinimumLevel(LogLevel.Debug);
 
         appBuilder.Services.AddBookStackService(appBuilder.Configuration);
-        appBuilder.Services.AddOpenAI(appBuilder.Configuration);
+        appBuilder.Services.AddOpenAi(appBuilder.Configuration);
+        
         appBuilder.Services.AddHostedService<ServiceInitializer>();
 
         appBuilder.AddDiscordBot<BoredBot>(

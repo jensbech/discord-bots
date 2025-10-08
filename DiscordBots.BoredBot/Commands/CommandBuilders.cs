@@ -1,6 +1,6 @@
 using Discord;
 
-namespace DiscordBots.BoredBot
+namespace DiscordBots.BoredBot.Commands
 {
     public static class CommandBuilders
     {

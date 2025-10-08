@@ -7,11 +7,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands.Handlers;
 
-internal sealed class Ask(IBookStackClient bookStack, IOpenAIClient openAI) : ISlashCommandHandler
+internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : ISlashCommandHandler
 {
-    private readonly IBookStackClient _bookStack = bookStack;
-    private readonly IOpenAIClient _openAI = openAI;
-
     public string Name => "ask";
 
     public async Task HandleAsync(SocketSlashCommand command, ILogger logger)
@@ -24,7 +21,7 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAIClient openAI) : IS
 
         try
         {
-            var response = await _bookStack.SearchAsync(question);
+            var response = await bookStack.SearchAsync(question);
             if (response == null)
             {
                 await command.FollowupAsync($"No knowledge base results for '{question}'.");
@@ -34,16 +31,16 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAIClient openAI) : IS
 
             var bookstackDocuments = ConstructBookStackDocs(response.Data);
 
-            var openAIAnswer = await _openAI.AskChat(question, bookstackDocuments);
+            var openAiAnswer = await openAi.AskChat(question, bookstackDocuments);
 
-            if (string.IsNullOrWhiteSpace(openAIAnswer))
+            if (string.IsNullOrWhiteSpace(openAiAnswer))
             {
                 await command.FollowupAsync("AI couldn't form an answer from docs.");
                 logger.LogInformation("/ask {Question} => no AI answer", question);
                 return;
             }
 
-            foreach (var chunk in SplitForDiscord(openAIAnswer))
+            foreach (var chunk in SplitForDiscord(openAiAnswer))
             {
                 await command.FollowupAsync(chunk);
             }
@@ -64,11 +61,11 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAIClient openAI) : IS
         var docs = new List<string>();
         foreach (var item in results)
         {
-            var pageHtml = _bookStack.GetPageHtmlAsync(item.Url).Result;
+            var pageHtml = bookStack.GetPageHtmlAsync(item.Url).Result;
             if (pageHtml is null)
                 continue;
 
-            var preview = PreviewCleaner.Clean(item.PreviewHtml.Content ?? string.Empty);
+            var preview = PreviewCleaner.Clean(item.PreviewHtml.Content);
             var header = $"Title: {item.Name}\nURL: {item.Url}";
 
             if (!string.IsNullOrWhiteSpace(preview))
@@ -86,7 +83,7 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAIClient openAI) : IS
     private static IEnumerable<string> SplitForDiscord(string text)
     {
         const int maxLen = 1900;
-        var paragraphs = text.Split("\n\n", StringSplitOptions.None);
+        var paragraphs = text.Split("\n\n");
         var current = new StringBuilder();
         foreach (var p in paragraphs)
         {

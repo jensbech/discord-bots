@@ -54,18 +54,17 @@ public static partial class InputParser
             return true;
         }
 
-        var rawTokens = RegexToken().Matches(clean).Cast<Match>().Select(m => m.Value).ToArray();
-        if (rawTokens.Length == 0)
+        var rawTokens = RegexToken().Matches(clean).Select(m => m.Value).ToArray();
+        
+        switch (rawTokens.Length)
         {
-            errorMessageToUser =
-                $"Unable to parse any dice or modifiers. Examples: '3d6+5', 'd20-2', '2d8+1d6+4'. This is what you wrote: '{userTextInput}'.";
-            return false;
-        }
-
-        if (rawTokens.Length > MaxDiceGroups + 50)
-        {
-            errorMessageToUser = "Expression too long / complex.";
-            return false;
+            case 0:
+                errorMessageToUser =
+                    $"Unable to parse any dice or modifiers. Examples: '3d6+5', 'd20-2', '2d8+1d6+4'. This is what you wrote: '{userTextInput}'.";
+                return false;
+            case > MaxDiceGroups + 50:
+                errorMessageToUser = "Expression too long / complex.";
+                return false;
         }
 
         var diceList = new List<int>();

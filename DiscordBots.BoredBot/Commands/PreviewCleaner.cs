@@ -27,6 +27,6 @@ internal static partial class PreviewCleaner
     [GeneratedRegex("<[^>]+>")]
     private static partial Regex StripTags();
 
-    [GeneratedRegex("\\s+\\n")]
+    [GeneratedRegex(@"\s+\n")]
     private static partial Regex CollapseWhitespaceNewline();
 }

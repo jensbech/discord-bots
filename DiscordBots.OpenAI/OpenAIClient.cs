@@ -8,21 +8,21 @@ using Microsoft.Extensions.Options;
 
 namespace DiscordBots.OpenAI;
 
-public interface IOpenAIClient
+public interface IOpenAiClient
 {
     Task<string?> RulesChat(string question);
     Task<string?> AskChat(string question, IReadOnlyList<string> documents);
 }
 
-internal sealed class OpenAIClient(
+internal sealed class OpenAiClient(
     HttpClient http,
-    IOptions<OpenAIOptions> options,
-    ILogger<OpenAIClient> logger
-) : IOpenAIClient
+    IOptions<OpenAiOptions> options,
+    ILogger<OpenAiClient> logger
+) : IOpenAiClient
 {
     private readonly HttpClient _http = http;
-    private readonly OpenAIOptions _options = options.Value;
-    private readonly ILogger<OpenAIClient> _logger = logger;
+    private readonly OpenAiOptions _options = options.Value;
+    private readonly ILogger<OpenAiClient> _logger = logger;
 
     public async Task<string?> RulesChat(string question)
     {
