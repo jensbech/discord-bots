@@ -13,7 +13,7 @@ public static class DiscordBotHostingExtensions
         SlashCommandBuilder[] commands,
         string botName
     )
-        where TBot : DiscordBot
+        where TBot : BaseDiscordBot
     {
         builder.Services.AddSingleton(botFactory);
         builder.Services.AddSingleton(commands);

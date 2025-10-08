@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot
 {
-    public class BoredBot : DiscordBot
+    public class BoredBot : BaseDiscordBot
     {
         private static BoredBot? _instance;
 

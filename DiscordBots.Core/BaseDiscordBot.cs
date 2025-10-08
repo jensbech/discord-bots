@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.Core
 {
-    public abstract class DiscordBot
+    public abstract class BaseDiscordBot
     {
         private readonly string _token;
         protected readonly DiscordSocketClient Client;
@@ -13,7 +13,7 @@ namespace DiscordBots.Core
         protected IReadOnlyList<SlashCommandBuilder> Commands => _commands;
         protected readonly ILogger Logger;
 
-        protected DiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
+        protected BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
         {
             Client = new DiscordSocketClient(
                 new DiscordSocketConfig

@@ -11,14 +11,14 @@ public class DiscordBotService<TBot>(
     SlashCommandBuilder[] commands,
     string botName
 ) : BackgroundService
-    where TBot : DiscordBot
+    where TBot : BaseDiscordBot
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
             logger.LogInformation("Starting {BotName} service...", botName);
-            var environmentVariables = DiscordBot.EnsureEnvironmentVariables();
+            var environmentVariables = BaseDiscordBot.EnsureEnvironmentVariables();
             await botFactory(environmentVariables, commands, botLogger);
             logger.LogInformation("{BotName} service started successfully", botName);
             _ = Task.Delay(Timeout.Infinite, stoppingToken);
