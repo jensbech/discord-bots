@@ -52,8 +52,9 @@ namespace DiscordBots.Core
         {
             try
             {
-                ApplicationCommandProperties[] commandData = _commands.Select(cmd => cmd.Build()).ToArray<ApplicationCommandProperties>();
+                var commandData = _commands.Select(cmd => cmd.Build()).ToArray<ApplicationCommandProperties>();
                 await Client.Rest.BulkOverwriteGlobalCommands(commandData);
+                
                 Logger.LogInformation(
                     "Registered {CommandCount} global slash command(s)",
                     commandData.Length
@@ -71,6 +72,7 @@ namespace DiscordBots.Core
         {
             if (message.Author.IsBot)
                 return Task.CompletedTask;
+            
             Logger.LogIncomingUserMessage(message);
             return Task.CompletedTask;
         }
