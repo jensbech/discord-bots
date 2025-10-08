@@ -47,17 +47,13 @@ internal sealed class OpenAiClient(
         List<ChatMessage> messages = [];
         if (!string.IsNullOrEmpty(systemPrompt))
         {
-            messages.Add(new ChatMessage { Role = "system", Content = systemPrompt });
+            messages.Add(new ChatMessage { Content = systemPrompt });
         }
-        messages.Add(new ChatMessage { Role = "user", Content = question });
+        messages.Add(new ChatMessage { Content = question });
 
         req.Content = JsonContent.Create(
             new ChatCompletionRequest
             {
-                Model = _options.Model,
-                Messages = messages,
-                MaxTokens = _options.MaxTokens,
-                Temperature = 0.3,
             }
         );
         return req;

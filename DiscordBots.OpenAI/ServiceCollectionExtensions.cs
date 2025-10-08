@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
 
         var model = Get("Model", "OPENAI_MODEL") ?? "gpt-3.5-turbo";
         var baseUrl = (Get("BaseUrl", "OPENAI_BASE_URL") ?? "https://api.openai.com").Trim();
-        if (baseUrl.EndsWith("/"))
+        if (baseUrl.EndsWith($"/"))
             baseUrl = baseUrl.TrimEnd('/');
 
         var maxTokens = int.TryParse(Get("MaxTokens", "OPENAI_MAX_TOKENS"), out var mt) ? mt : 1000;
@@ -34,8 +34,6 @@ public static class ServiceCollectionExtensions
         services.Configure<OpenAiOptions>(options =>
         {
             options.ApiKey = apiKey;
-            options.Model = model;
-            options.MaxTokens = maxTokens;
             options.Project = project;
         });
 
@@ -57,41 +55,24 @@ public static class ServiceCollectionExtensions
     }
 }
 
-internal sealed class OpenAiConfigLogger : IHostedService
+internal sealed class OpenAiConfigLogger(
+    ILogger<OpenAiConfigLogger> logger,
+    string baseUrl,
+    string model,
+    string apiKey,
+    string? org,
+    string? project)
+    : IHostedService
 {
-    private readonly ILogger<OpenAiConfigLogger> _logger;
-    private readonly string _baseUrl;
-    private readonly string _model;
-    private readonly string _apiKey;
-    private readonly string? _org;
-    private readonly string? _project;
-
-    public OpenAiConfigLogger(
-        ILogger<OpenAiConfigLogger> logger,
-        string baseUrl,
-        string model,
-        string apiKey,
-        string? org,
-        string? project
-    )
-    {
-        _logger = logger;
-        _baseUrl = baseUrl;
-        _model = model;
-        _apiKey = apiKey;
-        _org = org;
-        _project = project;
-    }
-
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogDebug(
+        logger.LogDebug(
             "OpenAI configured baseUrl={BaseUrl} model={Model} keyPrefix={KeyPrefix} org={Org} project={Project}",
-            _baseUrl,
-            _model,
-            _apiKey.Length >= 7 ? _apiKey[..7] : _apiKey,
-            _org ?? "<none>",
-            _project ?? "<none>"
+            baseUrl,
+            model,
+            apiKey.Length >= 7 ? apiKey[..7] : apiKey,
+            org ?? "<none>",
+            project ?? "<none>"
         );
         return Task.CompletedTask;
     }
