@@ -13,6 +13,10 @@ namespace DiscordBots.BoredBot
     public class BoredBot : BaseDiscordBot
     {
         private static BoredBot? _instance;
+        private IBookStackClient? _bookStack;
+        private IOpenAiClient? _openAi;
+        
+        public static BoredBot Instance => _instance ?? throw new Exception("");
 
         private BoredBot(string token, SlashCommandBuilder[] commands, ILogger<BoredBot> logger)
             : base(token, commands, logger) { }
@@ -29,12 +33,8 @@ namespace DiscordBots.BoredBot
             await _instance.InitializeAsync("Bored Bot");
             return _instance;
         }
-
-        public static BoredBot Instance => _instance ?? throw new Exception("");
-
-        private IBookStackClient? _bookStack;
-        private IOpenAiClient? _openAi;
-        private IReadOnlyDictionary<string, ISlashCommandHandler> _handlers = new Dictionary<
+        
+        private IReadOnlyDictionary<string, ISlashCommandHandler> Handlers { get; set; } = new Dictionary<
             string,
             ISlashCommandHandler
         >(StringComparer.OrdinalIgnoreCase);
@@ -58,9 +58,9 @@ namespace DiscordBots.BoredBot
                 new Ask(_bookStack, _openAi),
                 new Help(),
             };
-            _handlers = handlers.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
+            Handlers = handlers.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
 
-            if (_handlers.TryGetValue(command.CommandName, out var handler))
+            if (Handlers.TryGetValue(command.CommandName, out var handler))
             {
                 await handler.HandleAsync(command, Logger);
                 return;
