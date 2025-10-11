@@ -11,6 +11,7 @@ public class NewPost
 {
     public static async Task<IResult> SendAsync(
         HttpRequest request,
+        BoredBot boredBot,
         ILogger<NewPost> logger,
         IOptions<BookStackOptions> options
     )
@@ -29,7 +30,7 @@ public class NewPost
             var guildId = ulong.Parse(options.Value.GuildId);
             var channelId = ulong.Parse(options.Value.ChannelId);
 
-            var botClient = BoredBot.Instance.GetClient();
+            var botClient = boredBot.DiscordClient;
             var guild = botClient.GetGuild(guildId);
             var channel = guild.GetTextChannel(channelId);
 

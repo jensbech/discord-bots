@@ -43,7 +43,6 @@ namespace DiscordBots.BookStack
 
             services.Configure<BookStackOptions>(o =>
             {
-                o.BaseUrl = normalizedBaseUrl;
                 o.ApiId = apiId;
                 o.ApiKey = apiKey;
                 o.GuildId = guildId;

@@ -10,14 +10,6 @@ public static class ServiceCollectionExtensions
     public static void AddOpenAi(this IServiceCollection services,
         IConfiguration config)
     {
-        string? Get(string keySuffix, string envVar)
-        {
-            var value = config[$"{OpenAiOptions.SectionName}:{keySuffix}"];
-            return string.IsNullOrWhiteSpace(value)
-                ? Environment.GetEnvironmentVariable(envVar)
-                : value;
-        }
-
         var apiKey =
             Get("ApiKey", "OPENAI_API_KEY")
             ?? throw new InvalidOperationException("OPENAI_API_KEY / OpenAI:ApiKey is required");
@@ -27,7 +19,6 @@ public static class ServiceCollectionExtensions
         if (baseUrl.EndsWith($"/"))
             baseUrl = baseUrl.TrimEnd('/');
 
-        var maxTokens = int.TryParse(Get("MaxTokens", "OPENAI_MAX_TOKENS"), out var mt) ? mt : 1000;
         var org = Get("Organization", "OPENAI_ORG");
         var project = Get("Project", "OPENAI_PROJECT");
 
@@ -52,6 +43,15 @@ public static class ServiceCollectionExtensions
             org,
             project
         ));
+        return;
+
+        string? Get(string keySuffix, string envVar)
+        {
+            var value = config[$"{OpenAiOptions.SectionName}:{keySuffix}"];
+            return string.IsNullOrWhiteSpace(value)
+                ? Environment.GetEnvironmentVariable(envVar)
+                : value;
+        }
     }
 }
 

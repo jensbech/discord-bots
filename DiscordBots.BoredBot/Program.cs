@@ -16,16 +16,14 @@ public static class Program
     public static async Task Main()
     {
         var appBuilder = WebApplication.CreateBuilder();
+        
         appBuilder.Logging.AddConsole();
         appBuilder.Logging.SetMinimumLevel(LogLevel.Debug);
 
         appBuilder.Services.AddBookStackService(appBuilder.Configuration);
         appBuilder.Services.AddOpenAi(appBuilder.Configuration);
         
-        appBuilder.Services.AddHostedService<ServiceInitializer>();
-
         appBuilder.AddDiscordBot<BoredBot>(
-            BoredBot.GetOrCreateInstance,
             CommandBuilders.Commands,
             "Bored Bot"
         );
@@ -34,14 +32,12 @@ public static class Program
 
         app.MapPost(
             "/webhooks/new_post",
-            (
+            async (
                 HttpRequest request,
+                BoredBot bot,
                 ILogger<NewPost> logger,
                 IOptions<BookStackOptions> bookstackOptions
-            ) =>
-            {
-                _ = NewPost.SendAsync(request, logger, bookstackOptions);
-            }
+            ) => await NewPost.SendAsync(request, bot, logger, bookstackOptions)
         );
 
         await app.RunAsync();

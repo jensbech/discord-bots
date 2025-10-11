@@ -1,7 +1,5 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
-using Discord;
 using DiscordBots.OpenAI.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,31 +18,29 @@ internal sealed class OpenAiClient(
     ILogger<OpenAiClient> logger
 ) : IOpenAiClient
 {
-    private readonly HttpClient _http = http;
-    private readonly OpenAiOptions _options = options.Value;
-    private readonly ILogger<OpenAiClient> _logger = logger;
-
     public async Task<string?> RulesChat(string question)
     {
-        var systemPrompt = OpenAI.RulesChat.Get();
-        var res = await _http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
-        return await EnsureChatAnswerString(res);
+        var systemPrompt = Prompts.RulesChat.GetSystemPrompt();
+        var result = await http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
+        var answer = await EnsureChatAnswerString(result);
+        return answer;
     }
 
     public async Task<string?> AskChat(string query, IReadOnlyList<string> documents)
     {
         var (systemPrompt, question) = OpenAI.AskChat.Get(query, [.. documents]);
-        var res = await _http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
+        var res = await http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
         return await EnsureChatAnswerString(res);
     }
 
     private HttpRequestMessage ConstructCompletionRequest(string question, string? systemPrompt)
     {
         var req = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions");
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
-        req.Headers.Add("OpenAI-Project", _options.Project);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.Value.ApiKey);
+        req.Headers.Add("OpenAI-Project", options.Value.Project);
 
         List<ChatMessage> messages = [];
+        
         if (!string.IsNullOrEmpty(systemPrompt))
         {
             messages.Add(new ChatMessage { Content = systemPrompt });
@@ -52,10 +48,7 @@ internal sealed class OpenAiClient(
         messages.Add(new ChatMessage { Content = question });
 
         req.Content = JsonContent.Create(
-            new ChatCompletionRequest
-            {
-            }
-        );
+            new ChatCompletionRequest());
         return req;
     }
 
@@ -66,7 +59,7 @@ internal sealed class OpenAiClient(
             var errorContent = await httpResponse.Content.ReadAsStringAsync();
             Console.WriteLine($"Error response: {errorContent}");
             var error = $"Failed to get response from OpenAI: '{httpResponse.StatusCode}'";
-            _logger.LogError(error, httpResponse.StatusCode);
+            logger.LogError(error, httpResponse.StatusCode);
             throw new Exception(error);
         }
 

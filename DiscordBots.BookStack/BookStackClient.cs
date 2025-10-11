@@ -19,9 +19,7 @@ namespace DiscordBots.BookStack
         ILogger<BookStackClient> logger
     ) : IBookStackClient
     {
-        private readonly HttpClient _http = http;
         private readonly BookStackOptions _options = options.Value;
-        private readonly ILogger<BookStackClient> _logger = logger;
 
         public async Task<BookStackSearchResponse?> SearchAsync(
             string query,
@@ -34,7 +32,7 @@ namespace DiscordBots.BookStack
             q["page"] = page.ToString();
             q["count"] = count.ToString();
             var url = $"search?{q}";
-            _logger.LogDebug("Making request to: {Url}", url);
+            logger.LogDebug("Making request to: {Url}", url);
 
             using var req = new HttpRequestMessage(HttpMethod.Get, url);
 
@@ -43,11 +41,11 @@ namespace DiscordBots.BookStack
                 $"{_options.ApiId}:{_options.ApiKey}"
             );
 
-            var res = await _http.SendAsync(req);
+            var res = await http.SendAsync(req);
 
             if (!res.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to query bookstack: ${res.StatusCode}");
+                logger.LogError($"Failed to query bookstack: ${res.StatusCode}");
                 return null;
             }
 
@@ -68,22 +66,21 @@ namespace DiscordBots.BookStack
                 var tokenValue = $"{_options.ApiId}:{_options.ApiKey}";
                 req.Headers.Authorization = new AuthenticationHeaderValue("Token", tokenValue);
 
-                var resp = await _http.SendAsync(req);
-                if (!resp.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning(
-                        "Failed to fetch BookStack page {Url} status {Status}",
-                        pageUrl,
-                        resp.StatusCode
-                    );
-                    return null;
-                }
+                var resp = await http.SendAsync(req);
+                
+                if (resp.IsSuccessStatusCode) return await resp.Content.ReadAsStringAsync();
+                
+                logger.LogWarning(
+                    "Failed to fetch BookStack page {Url} status {Status}",
+                    pageUrl,
+                    resp.StatusCode
+                );
+                return null;
 
-                return await resp.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching BookStack page {Url}", pageUrl);
+                logger.LogError(ex, "Error fetching BookStack page {Url}", pageUrl);
                 return null;
             }
         }
