@@ -1,3 +1,4 @@
+using DiscordBots.BookStack.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -49,7 +50,7 @@ namespace DiscordBots.BookStack
                 o.ChannelId = channelId;
             });
 
-            _ = services
+            services
                 .AddHttpClient<IBookStackClient, BookStackClient>(client =>
                 {
                     client.BaseAddress = new Uri(normalizedBaseUrl);

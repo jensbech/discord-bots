@@ -1,11 +1,10 @@
 using Discord;
 using Discord.WebSocket;
-using DiscordBots.BookStack;
-using DiscordBots.BoredBot.Commands;
+using DiscordBots.BookStack.Interfaces;
 using DiscordBots.BoredBot.Commands.Handlers;
+using DiscordBots.BoredBot.Commands.Interfaces;
 using DiscordBots.Core;
 using DiscordBots.Core.Logging;
-using DiscordBots.OpenAI;
 using DiscordBots.OpenAI.Interfaces;
 using Microsoft.Extensions.Logging;
 

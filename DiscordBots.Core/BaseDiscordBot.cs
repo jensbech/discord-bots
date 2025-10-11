@@ -7,6 +7,8 @@ namespace DiscordBots.Core;
 
 public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
 {
+    protected ILogger Logger { get; } = logger;
+    
     private DiscordSocketClient Client { get; } = new(
         new DiscordSocketConfig
         {
@@ -17,7 +19,6 @@ public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] command
         }
     );
 
-    protected ILogger Logger { get; } = logger;
 
     public DiscordSocketClient DiscordClient => Client; 
 

@@ -1,4 +1,5 @@
 using Discord.WebSocket;
+using DiscordBots.BoredBot.Commands.Interfaces;
 using DiscordBots.BoredBot.Dice;
 using Microsoft.Extensions.Logging;
 

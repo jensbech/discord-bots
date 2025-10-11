@@ -1,7 +1,9 @@
 using System.Text;
 using Discord.WebSocket;
 using DiscordBots.BookStack;
+using DiscordBots.BookStack.Interfaces;
 using DiscordBots.BookStack.Models;
+using DiscordBots.BoredBot.Commands.Interfaces;
 using DiscordBots.OpenAI;
 using DiscordBots.OpenAI.Interfaces;
 using Microsoft.Extensions.Logging;

@@ -1,6 +1,8 @@
 using Discord;
 using Discord.WebSocket;
 using DiscordBots.BookStack;
+using DiscordBots.BookStack.Interfaces;
+using DiscordBots.BoredBot.Commands.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands.Handlers

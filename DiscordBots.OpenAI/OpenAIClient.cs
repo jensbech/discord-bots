@@ -23,7 +23,7 @@ internal sealed class OpenAiClient(
 
     public async Task<string?> AskChat(string query, IReadOnlyList<string> documents)
     {
-        var (systemPrompt, question) = OpenAI.AskChat.Get(query, [.. documents]);
+        var (systemPrompt, question) = Prompts.AskChat.Get(query, [.. documents]);
         var res = await http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
         return await EnsureChatAnswerString(res);
     }

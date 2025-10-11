@@ -1,18 +1,13 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Web;
+using DiscordBots.BookStack.Interfaces;
 using DiscordBots.BookStack.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DiscordBots.BookStack
 {
-    public interface IBookStackClient
-    {
-        Task<BookStackSearchResponse?> SearchAsync(string query, int page = 1, int count = 10);
-        Task<string?> GetPageHtmlAsync(string pageUrl);
-    }
-
     internal sealed class BookStackClient(
         HttpClient http,
         IOptions<BookStackOptions> options,
@@ -43,15 +38,14 @@ namespace DiscordBots.BookStack
 
             var res = await http.SendAsync(req);
 
-            if (!res.IsSuccessStatusCode)
-            {
-                logger.LogError($"Failed to query bookstack: ${res.StatusCode}");
-                return null;
-            }
-
-            return JsonSerializer.Deserialize<BookStackSearchResponse>(
+            if (res.IsSuccessStatusCode)
+                return JsonSerializer.Deserialize<BookStackSearchResponse>(
                     await res.Content.ReadAsStringAsync()
                 ) ?? null;
+            
+            logger.LogError("Failed to query bookstack: ${HttpStatusCode}", res.StatusCode);
+            return null;
+
         }
 
         public async Task<string?> GetPageHtmlAsync(string pageUrl)

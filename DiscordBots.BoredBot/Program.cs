@@ -15,20 +15,18 @@ public static class Program
 {
     public static async Task Main()
     {
-        var appBuilder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder();
         
-        appBuilder.Logging.AddConsole();
-        appBuilder.Logging.SetMinimumLevel(LogLevel.Debug);
+        builder.Logging.AddConsole();
+        builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
-        appBuilder.Services.AddBookStackService(appBuilder.Configuration);
-        appBuilder.Services.AddOpenAi(appBuilder.Configuration);
+        builder.Services.AddBookStackService(builder.Configuration);
+        builder.Services.AddOpenAi(builder.Configuration);
+        builder.Services.AddSingleton(CommandBuilders.Commands);
+        builder.Services.AddSingleton("Bored Bot");
+        builder.Services.AddHostedService<DiscordBotService<BoredBot>>();
         
-        appBuilder.AddDiscordBot<BoredBot>(
-            CommandBuilders.Commands,
-            "Bored Bot"
-        );
-
-        var app = appBuilder.Build();
+        var app = builder.Build();
 
         app.MapPost(
             "/webhooks/new_post",
