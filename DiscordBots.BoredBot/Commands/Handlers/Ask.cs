@@ -1,4 +1,5 @@
 using System.Text;
+using Discord;
 using Discord.WebSocket;
 using DiscordBots.BookStack.Interfaces;
 using DiscordBots.BookStack.Models;
@@ -23,96 +24,137 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : IS
         try
         {
             var response = await bookStack.SearchAsync(question);
-            if (response == null)
+            List<string> docs = [];
+            List<(string Title, string Url)> sources = [];
+            if (response?.Data != null)
             {
-                await command.FollowupAsync($"No knowledge base results for '{question}'.");
-                logger.LogInformation("/ask {Question} => no results", question);
-                return;
+                docs = await BuildDocsAsync(response.Data, sources);
             }
 
-            var bookstackDocuments = ConstructBookStackDocs(response.Data);
-
-            var openAiAnswer = await openAi.AskChat(question, bookstackDocuments);
-
-            if (string.IsNullOrWhiteSpace(openAiAnswer))
+            if (docs.Count == 0)
             {
-                await command.FollowupAsync("AI couldn't form an answer from docs.");
+                logger.LogInformation("/ask {Question} => no initial results, attempting query reduction", question);
+                var reduced = await openAi.ReduceSearchQuery(question);
+                if (!string.IsNullOrWhiteSpace(reduced) && !reduced.Equals(question, StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.LogInformation("/ask {Question} => reduced query: {Reduced}", question, reduced);
+                    var retryResponse = await bookStack.SearchAsync(reduced);
+                    sources.Clear();
+                    if (retryResponse?.Data != null)
+                    {
+                        docs = await BuildDocsAsync(retryResponse.Data, sources);
+                    }
+                    if (docs.Count == 0)
+                    {
+                        var noResMsg = await command.FollowupAsync($"No results for '{question}' (reduced to '{reduced}').");
+                        TrySuppressEmbeds(noResMsg, logger);
+                        logger.LogInformation("/ask {Question} => no results after reduction", question);
+                        return;
+                    }
+                }
+                else if (string.IsNullOrWhiteSpace(reduced))
+                {
+                    var failMsg = await command.FollowupAsync($"No results for '{question}'. (Query reduction failed)");
+                    TrySuppressEmbeds(failMsg, logger);
+                    logger.LogInformation("/ask {Question} => no results and reduction failed", question);
+                    return;
+                }
+                else
+                {
+                    var noResMsg = await command.FollowupAsync($"No results for '{question}'.");
+                    TrySuppressEmbeds(noResMsg, logger);
+                    logger.LogInformation("/ask {Question} => no results even after identical reduction", question);
+                    return;
+                }
+            }
+
+            var answer = await openAi.AskChat(question, docs);
+
+            if (string.IsNullOrWhiteSpace(answer))
+            {
+                var noAnsMsg = await command.FollowupAsync("No answer.");
+                TrySuppressEmbeds(noAnsMsg, logger);
                 logger.LogInformation("/ask {Question} => no AI answer", question);
                 return;
             }
 
-            foreach (var chunk in SplitForDiscord(openAiAnswer))
+            foreach (var chunk in Split(answer))
             {
-                await command.FollowupAsync(chunk);
+                var msg = await command.FollowupAsync(chunk);
+                TrySuppressEmbeds(msg, logger);
+            }
+
+            if (sources.Count > 0)
+            {
+                var srcMsgText = "Sources:\n" + string.Join("\n", sources.Take(3).Select((s, _) => $"- {ToMarkdownLink(s.Title, s.Url)}"));
+                var srcMsg = await command.FollowupAsync(srcMsgText);
+                TrySuppressEmbeds(srcMsg, logger);
             }
 
             logger.LogInformation("/ask {Question} => answered", question);
         }
         catch (Exception ex)
         {
-            await command.FollowupAsync("Unexpected error processing /ask.");
+            var errMsg = await command.FollowupAsync("Error processing /ask.");
+            TrySuppressEmbeds(errMsg, logger);
             logger.LogError(ex, "/ask {Question} exception", question);
         }
     }
 
-    private List<string> ConstructBookStackDocs(
-        IReadOnlyList<BookStackSearchResponse.BookStackSearchResult> results
+    private async Task<List<string>> BuildDocsAsync(
+        IReadOnlyList<BookStackSearchResponse.BookStackSearchResult> results,
+        List<(string Title, string Url)> sources
     )
     {
-        var docs = new List<string>();
-        foreach (var item in results)
+        var list = new List<string>();
+        foreach (var r in results)
         {
-            var pageHtml = bookStack.GetPageHtmlAsync(item.Url).Result;
-            if (pageHtml is null)
-                continue;
-
-            var preview = PreviewCleaner.Clean(item.PreviewHtml.Content);
-            var header = $"Title: {item.Name}\nURL: {item.Url}";
-
-            if (!string.IsNullOrWhiteSpace(preview))
+            var html = await bookStack.GetEntityHtmlAsync(r.Type, r.Id);
+            if (html is null) continue;
+            var preview = PreviewCleaner.Clean(r.PreviewHtml.Content);
+            if (sources.Count < 3)
             {
-                var trimmedPrev = preview.Length > 400 ? preview[..400] + "…" : preview;
-                header += $"\nPreview: {trimmedPrev}";
+                sources.Add((r.Name, r.Url));
             }
-
-            var body = pageHtml.Length > 2500 ? pageHtml[..2500] + "…" : pageHtml;
-            docs.Add(header + "\n\n" + body);
+            var header = $"Title: {r.Name}\nURL: <{r.Url}>" + (string.IsNullOrWhiteSpace(preview) ? string.Empty : $"\nPreview: {(preview.Length > 400 ? preview[..400] + "…" : preview)}");
+            var body = html.Length > 2500 ? html[..2500] + "…" : html;
+            list.Add(header + "\n\n" + body);
         }
-        return docs;
+        return list;
     }
 
-    private static IEnumerable<string> SplitForDiscord(string text)
+    private static IEnumerable<string> Split(string text)
     {
-        const int maxLen = 1900;
-        var paragraphs = text.Split("\n\n");
-        var current = new StringBuilder();
-        foreach (var p in paragraphs)
+        const int max = 1900; var parts = text.Split("\n\n"); var sb = new StringBuilder();
+        foreach (var p in parts)
         {
-            var block = p.TrimEnd();
-            if (current.Length + block.Length + 2 > maxLen && current.Length > 0)
+            var b = p.TrimEnd();
+            if (sb.Length + b.Length + 2 > max && sb.Length > 0) { yield return sb.ToString(); sb.Clear(); }
+            if (b.Length > max)
             {
-                yield return current.ToString();
-                current.Clear();
+                for (var i = 0; i < b.Length; i += max) yield return b.Substring(i, Math.Min(max, b.Length - i));
             }
-            if (block.Length > maxLen)
-            {
-                var idx = 0;
-                while (idx < block.Length)
-                {
-                    var take = Math.Min(maxLen, block.Length - idx);
-                    var slice = block.Substring(idx, take);
-                    yield return slice;
-                    idx += take;
-                }
-            }
-            else
-            {
-                if (current.Length > 0)
-                    current.Append('\n').Append('\n');
-                current.Append(block);
-            }
+            else { if (sb.Length > 0) sb.Append('\n').Append('\n'); sb.Append(b); }
         }
-        if (current.Length > 0)
-            yield return current.ToString();
+        if (sb.Length > 0) yield return sb.ToString();
+    }
+
+    private static string ToMarkdownLink(string title, string url)
+    {
+        var safeTitle = title.Replace("[", "\\[").Replace("]", "\\]");
+        return $"[{safeTitle}](<{url}>)";
+    }
+
+    private static void TrySuppressEmbeds(IUserMessage? msg, ILogger logger)
+    {
+        if (msg is null) return;
+        try
+        {
+            msg.ModifyAsync(p => p.Flags = MessageFlags.SuppressEmbeds);
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Failed to suppress embeds for followup message {Id}", msg.Id);
+        }
     }
 }

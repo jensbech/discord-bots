@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
             Get("ApiKey", "OPENAI_API_KEY")
             ?? throw new InvalidOperationException("OPENAI_API_KEY / OpenAI:ApiKey is required");
 
-        var model = Get("Model", "OPENAI_MODEL") ?? "gpt-3.5-turbo";
+        var model = Get("Model", "OPENAI_MODEL") ?? "gpt-4.1";
         var baseUrl = (Get("BaseUrl", "OPENAI_BASE_URL") ?? "https://api.openai.com").Trim();
         if (baseUrl.EndsWith($"/"))
             baseUrl = baseUrl.TrimEnd('/');

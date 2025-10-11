@@ -8,73 +8,53 @@ using Microsoft.Extensions.Options;
 
 namespace DiscordBots.BookStack;
 
-internal sealed class BookStackClient(
-    HttpClient http,
-    IOptions<BookStackOptions> options,
-    ILogger<BookStackClient> logger
-) : IBookStackClient
+internal sealed class BookStackClient(HttpClient http, IOptions<BookStackOptions> options, ILogger<BookStackClient> logger) : IBookStackClient
 {
     private readonly BookStackOptions _options = options.Value;
 
-    public async Task<BookStackSearchResponse?> SearchAsync(
-        string query,
-        int page = 1,
-        int count = 100
-    )
+    public async Task<BookStackSearchResponse?> SearchAsync(string query, int page = 1, int count = 100)
     {
         var q = HttpUtility.ParseQueryString(string.Empty);
         q["query"] = query;
         q["page"] = page.ToString();
         q["count"] = count.ToString();
-        var url = $"search?{q}";
-        logger.LogDebug("Making request to: {Url}", url);
-
-        using var req = new HttpRequestMessage(HttpMethod.Get, url);
-
-        req.Headers.Authorization = new AuthenticationHeaderValue(
-            "Token",
-            $"{_options.ApiId}:{_options.ApiKey}"
-        );
-
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"search?{q}");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Token", $"{_options.ApiId}:{_options.ApiKey}");
         var res = await http.SendAsync(req);
-
-        if (res.IsSuccessStatusCode)
-            return JsonSerializer.Deserialize<BookStackSearchResponse>(
-                await res.Content.ReadAsStringAsync()
-            ) ?? null;
-
-        logger.LogError("Failed to query bookstack: ${HttpStatusCode}", res.StatusCode);
-        return null;
+        if (!res.IsSuccessStatusCode)
+            return null;
+        var json = await res.Content.ReadAsStringAsync();
+        try { return JsonSerializer.Deserialize<BookStackSearchResponse>(json); } catch { return null; }
     }
 
-    public async Task<string?> GetPageHtmlAsync(string pageUrl)
+    public async Task<string?> GetEntityHtmlAsync(string type, int id)
     {
-        if (string.IsNullOrWhiteSpace(pageUrl))
-            return null;
-
+        if (id <= 0 || string.IsNullOrWhiteSpace(type)) return null;
+        var endpoint = MapTypeToEndpoint(type);
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"{endpoint}/{id}");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Token", $"{_options.ApiId}:{_options.ApiKey}");
+        req.Headers.Accept.Clear();
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        var res = await http.SendAsync(req);
+        if (!res.IsSuccessStatusCode) return null;
+        var body = await res.Content.ReadAsStringAsync();
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, pageUrl);
-
-            var tokenValue = $"{_options.ApiId}:{_options.ApiKey}";
-            req.Headers.Authorization = new AuthenticationHeaderValue("Token", tokenValue);
-
-            var resp = await http.SendAsync(req);
-
-            if (resp.IsSuccessStatusCode)
-                return await resp.Content.ReadAsStringAsync();
-
-            logger.LogWarning(
-                "Failed to fetch BookStack page {Url} status {Status}",
-                pageUrl,
-                resp.StatusCode
-            );
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("html", out var htmlProp)) return htmlProp.GetString();
+            if (root.TryGetProperty("content", out var contentProp)) return contentProp.GetString();
             return null;
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error fetching BookStack page {Url}", pageUrl);
-            return null;
-        }
+        catch { return null; }
     }
+
+    private static string MapTypeToEndpoint(string type) => type.ToLowerInvariant() switch
+    {
+        "page" => "pages",
+        "chapter" => "chapters",
+        "book" => "books",
+        "bookshelf" => "bookshelves",
+        _ => type + "s"
+    };
 }

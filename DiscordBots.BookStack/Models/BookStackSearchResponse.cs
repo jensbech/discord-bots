@@ -19,6 +19,12 @@ namespace DiscordBots.BookStack.Models
 
             [JsonPropertyName("preview_html")]
             public required PreviewHtml PreviewHtml { get; init; } = previewHtml;
+
+            [JsonPropertyName("id")]
+            public int Id { get; init; }
+
+            [JsonPropertyName("type")]
+            public string Type { get; init; } = string.Empty;
         }
 
         public sealed class PreviewHtml(string content)

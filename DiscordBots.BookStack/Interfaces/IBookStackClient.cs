@@ -4,6 +4,6 @@ namespace DiscordBots.BookStack.Interfaces;
 
 public interface IBookStackClient
 {
-    Task<BookStackSearchResponse?> SearchAsync(string query, int page = 1, int count = 10);
-    Task<string?> GetPageHtmlAsync(string pageUrl);
+    Task<BookStackSearchResponse?> SearchAsync(string query, int page = 1, int count = 20);
+    Task<string?> GetEntityHtmlAsync(string type, int id);
 }
