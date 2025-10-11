@@ -29,29 +29,6 @@ namespace DiscordBots.BoredBot.Dice
             return true;
         }
 
-        public static string HandleRollCommand(string textInput)
-        {
-            if (!InputParser.Parse(textInput, out var parsedUserInput, out var parseError))
-            {
-                return parseError ?? throw new Exception("Dice parsing error is null");
-            }
-            var diceRolls = new List<(int sides, int result, string? message)>();
-            var sumOfAllRolls = 0;
-
-            foreach (var sides in parsedUserInput.Dices)
-            {
-                var (rollResult, rollResultMessage) = Roll(sides);
-                diceRolls.Add((sides, rollResult, rollResultMessage));
-                sumOfAllRolls += rollResult;
-            }
-
-            return ConstructRollOutcomeMessageLines(
-                diceRolls,
-                sumOfAllRolls,
-                parsedUserInput.Modifier
-            );
-        }
-
         private static (int RollResult, string? Message) Roll(int diceInput)
         {
             var allowedDice = new[]
@@ -83,7 +60,7 @@ namespace DiscordBots.BoredBot.Dice
             int dice
         )
         {
-            int rollResult = new Random().Next(1, dice + 1);
+            var rollResult = new Random().Next(1, dice + 1);
 
             return dice switch
             {

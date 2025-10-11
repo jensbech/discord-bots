@@ -40,7 +40,6 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<ILogger<OpenAiConfigLogger>>(),
             baseUrl,
             model,
-            apiKey,
             org,
             project
         ));
@@ -60,7 +59,6 @@ internal sealed class OpenAiConfigLogger(
     ILogger<OpenAiConfigLogger> logger,
     string baseUrl,
     string model,
-    string apiKey,
     string? org,
     string? project)
     : IHostedService
@@ -68,10 +66,9 @@ internal sealed class OpenAiConfigLogger(
     public Task StartAsync(CancellationToken cancellationToken)
     {
         logger.LogDebug(
-            "OpenAI configured baseUrl={BaseUrl} model={Model} keyPrefix={KeyPrefix} org={Org} project={Project}",
+            "OpenAI configured baseUrl={BaseUrl} model={Model} org={Org} project={Project}",
             baseUrl,
             model,
-            apiKey.Length >= 7 ? apiKey[..7] : apiKey,
             org ?? "<none>",
             project ?? "<none>"
         );

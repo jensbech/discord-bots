@@ -18,12 +18,13 @@ public static class Program
         var builder = WebApplication.CreateBuilder();
         
         builder.Logging.AddConsole();
-        builder.Logging.SetMinimumLevel(LogLevel.Debug);
+        builder.Logging.SetMinimumLevel(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"
+            ? LogLevel.Debug
+            : LogLevel.Information);
 
         builder.Services.AddBookStackService(builder.Configuration);
         builder.Services.AddOpenAi(builder.Configuration);
         builder.Services.AddSingleton(CommandBuilders.Commands);
-        builder.Services.AddSingleton("Bored Bot");
         builder.Services.AddHostedService<DiscordBotService<BoredBot>>();
         
         var app = builder.Build();
