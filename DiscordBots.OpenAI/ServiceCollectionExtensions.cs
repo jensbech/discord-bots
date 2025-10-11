@@ -8,8 +8,7 @@ namespace DiscordBots.OpenAI;
 
 public static class ServiceCollectionExtensions
 {
-    public static void AddOpenAi(this IServiceCollection services,
-        IConfiguration config)
+    public static void AddOpenAi(this IServiceCollection services, IConfiguration config)
     {
         var apiKey =
             Get("ApiKey", "OPENAI_API_KEY")
@@ -60,8 +59,8 @@ internal sealed class OpenAiConfigLogger(
     string baseUrl,
     string model,
     string? org,
-    string? project)
-    : IHostedService
+    string? project
+) : IHostedService
 {
     public Task StartAsync(CancellationToken cancellationToken)
     {

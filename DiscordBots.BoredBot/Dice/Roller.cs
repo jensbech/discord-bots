@@ -96,7 +96,7 @@ namespace DiscordBots.BoredBot.Dice
             var lines = new List<string> { "🎲 Dice Rolls:" };
 
             var width = diceRolls.Max(r => r.sides.ToString().Length);
-            
+
             foreach (var (sides, value, msg) in diceRolls)
             {
                 var sideLabel = ($"d{sides}").PadLeft(width + 1);

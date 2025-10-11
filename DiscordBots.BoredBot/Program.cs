@@ -16,17 +16,19 @@ public static class Program
     public static async Task Main()
     {
         var builder = WebApplication.CreateBuilder();
-        
+
         builder.Logging.AddConsole();
-        builder.Logging.SetMinimumLevel(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"
-            ? LogLevel.Debug
-            : LogLevel.Information);
+        builder.Logging.SetMinimumLevel(
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"
+                ? LogLevel.Debug
+                : LogLevel.Information
+        );
 
         builder.Services.AddBookStackService(builder.Configuration);
         builder.Services.AddOpenAi(builder.Configuration);
         builder.Services.AddSingleton(CommandBuilders.Commands);
         builder.Services.AddHostedService<DiscordBotService<BoredBot>>();
-        
+
         var app = builder.Build();
 
         app.MapPost(

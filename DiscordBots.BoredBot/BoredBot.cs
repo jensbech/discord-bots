@@ -18,25 +18,26 @@ namespace DiscordBots.BoredBot
         IOpenAiClient openAiClient
     ) : BaseDiscordBot(token, commands, logger)
     {
-        private readonly IReadOnlyDictionary<string, ISlashCommandHandler> _handlers = new List<ISlashCommandHandler>
-        {
-            new Roll(),
-            new Search(bookStackClient),
-            new Chat(openAiClient),
-            new Ask(bookStackClient, openAiClient),
-            new Help(),
-        }.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
+        private readonly IReadOnlyDictionary<string, ISlashCommandHandler> _handlers =
+            new List<ISlashCommandHandler>
+            {
+                new Roll(),
+                new Search(bookStackClient),
+                new Chat(openAiClient),
+                new Ask(bookStackClient, openAiClient),
+                new Help(),
+            }.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
 
         protected override async Task OnSlashCommandAsync(SocketSlashCommand command)
         {
             if (_handlers.TryGetValue(command.CommandName, out var handler))
             {
-                await handler.HandleAsync(command, Logger);
+                await handler.HandleAsync(command, logger);
             }
             else
             {
                 await command.RespondAsync("Unknown command.", ephemeral: true);
-                Logger.LogSlashError(command, "Unhandled command");
+                logger.LogSlashError(command, "Unhandled command");
             }
         }
     }

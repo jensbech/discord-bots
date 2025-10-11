@@ -35,15 +35,14 @@ internal sealed class OpenAiClient(
         req.Headers.Add("OpenAI-Project", options.Value.Project);
 
         List<ChatMessage> messages = [];
-        
+
         if (!string.IsNullOrEmpty(systemPrompt))
         {
             messages.Add(new ChatMessage { Content = systemPrompt });
         }
         messages.Add(new ChatMessage { Content = question });
 
-        req.Content = JsonContent.Create(
-            new ChatCompletionRequest());
+        req.Content = JsonContent.Create(new ChatCompletionRequest());
         return req;
     }
 

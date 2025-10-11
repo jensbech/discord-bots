@@ -40,12 +40,11 @@ namespace DiscordBots.BookStack
 
             if (res.IsSuccessStatusCode)
                 return JsonSerializer.Deserialize<BookStackSearchResponse>(
-                    await res.Content.ReadAsStringAsync()
-                ) ?? null;
-            
+                        await res.Content.ReadAsStringAsync()
+                    ) ?? null;
+
             logger.LogError("Failed to query bookstack: ${HttpStatusCode}", res.StatusCode);
             return null;
-
         }
 
         public async Task<string?> GetPageHtmlAsync(string pageUrl)
@@ -61,16 +60,16 @@ namespace DiscordBots.BookStack
                 req.Headers.Authorization = new AuthenticationHeaderValue("Token", tokenValue);
 
                 var resp = await http.SendAsync(req);
-                
-                if (resp.IsSuccessStatusCode) return await resp.Content.ReadAsStringAsync();
-                
+
+                if (resp.IsSuccessStatusCode)
+                    return await resp.Content.ReadAsStringAsync();
+
                 logger.LogWarning(
                     "Failed to fetch BookStack page {Url} status {Status}",
                     pageUrl,
                     resp.StatusCode
                 );
                 return null;
-
             }
             catch (Exception ex)
             {

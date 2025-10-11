@@ -7,25 +7,23 @@ namespace DiscordBots.Core;
 
 public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
 {
-    private DiscordSocketClient DiscordSocketClient { get; } = new(
-        new DiscordSocketConfig
-        {
-            GatewayIntents =
-                GatewayIntents.Guilds
-                | GatewayIntents.GuildMessages
-                | GatewayIntents.MessageContent,
-        }
-    );
+    private DiscordSocketClient DiscordSocketClient { get; } =
+        new(
+            new DiscordSocketConfig
+            {
+                GatewayIntents =
+                    GatewayIntents.Guilds
+                    | GatewayIntents.GuildMessages
+                    | GatewayIntents.MessageContent,
+            }
+        );
 
-
-    public DiscordSocketClient DiscordClient => DiscordSocketClient; 
+    public DiscordSocketClient DiscordClient => DiscordSocketClient;
 
     private async Task LoginAsync()
     {
         if (string.IsNullOrEmpty(token))
-            throw new InvalidOperationException(
-                "No token provided when attempting to log in bot"
-            );
+            throw new InvalidOperationException("No token provided when attempting to log in bot");
 
         try
         {
@@ -42,9 +40,11 @@ public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] command
     {
         try
         {
-            var commandData = commands.Select(cmd => cmd.Build()).ToArray<ApplicationCommandProperties>();
+            var commandData = commands
+                .Select(cmd => cmd.Build())
+                .ToArray<ApplicationCommandProperties>();
             await DiscordSocketClient.Rest.BulkOverwriteGlobalCommands(commandData);
-            
+
             logger.LogInformation(
                 "Registered {CommandCount} global slash command(s)",
                 commandData.Length
@@ -62,7 +62,7 @@ public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] command
     {
         if (message.Author.IsBot)
             return Task.CompletedTask;
-        
+
         logger.LogIncomingUserMessage(message);
         return Task.CompletedTask;
     }
@@ -132,8 +132,7 @@ public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] command
         }
     }
 
-    protected virtual Task OnSlashCommandAsync(SocketSlashCommand command) =>
-        Task.CompletedTask;
+    protected virtual Task OnSlashCommandAsync(SocketSlashCommand command) => Task.CompletedTask;
 
     protected static string GetStringOption(SocketSlashCommand command, string name)
     {
@@ -146,15 +145,11 @@ public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] command
     public static BotEnvironmentVariables EnsureEnvironmentVariables()
     {
         string[] requiredVars = ["DISCORD_BOT_TOKEN", "APPLICATION_ID"];
-        var missing = requiredVars.Where(name =>
-            Environment.GetEnvironmentVariable(name) is null
-        );
+        var missing = requiredVars.Where(name => Environment.GetEnvironmentVariable(name) is null);
         var enumerable = missing as string[] ?? missing.ToArray();
         if (enumerable.Any())
             throw new Exception($"Missing environment variables: {string.Join(", ", enumerable)}");
-        return new BotEnvironmentVariables(
-            Environment.GetEnvironmentVariable(requiredVars[0])!
-        );
+        return new BotEnvironmentVariables(Environment.GetEnvironmentVariable(requiredVars[0])!);
     }
 }
 

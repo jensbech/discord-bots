@@ -55,7 +55,7 @@ public static partial class InputParser
         }
 
         var rawTokens = RegexToken().Matches(clean).Select(m => m.Value).ToArray();
-        
+
         switch (rawTokens.Length)
         {
             case 0:

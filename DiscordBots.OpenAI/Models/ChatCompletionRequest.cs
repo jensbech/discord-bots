@@ -1,8 +1,6 @@
 namespace DiscordBots.OpenAI.Models
 {
-    public sealed class ChatCompletionRequest
-    {
-    }
+    public sealed class ChatCompletionRequest { }
 
     public sealed class ChatMessage
     {

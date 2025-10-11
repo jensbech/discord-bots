@@ -1,5 +1,5 @@
 using Discord;
-using Microsoft.Extensions.DependencyInjection; 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +11,8 @@ public class DiscordBotService<TBot>(
     IServiceProvider serviceProvider,
     SlashCommandBuilder[] commands,
     string botName
-) : BackgroundService where TBot : BaseDiscordBot
+) : BackgroundService
+    where TBot : BaseDiscordBot
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
