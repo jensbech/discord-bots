@@ -14,7 +14,7 @@ public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] command
                 GatewayIntents =
                     GatewayIntents.Guilds
                     | GatewayIntents.GuildMessages
-                    | GatewayIntents.MessageContent,
+                    | GatewayIntents.MessageContent
             }
         );
 
@@ -121,6 +121,7 @@ public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] command
                         .Data.Options.Select(o => o.Value?.ToString())
                         .Where(v => !string.IsNullOrWhiteSpace(v))
                 );
+
             var friendly = string.IsNullOrWhiteSpace(userInput)
                 ? $"Something went wrong handling /{command.CommandName}. Please try again or use /help."
                 : $"Something went wrong handling /{command.CommandName} {userInput}. Please try again or use /help.";
@@ -134,22 +135,14 @@ public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] command
 
     protected virtual Task OnSlashCommandAsync(SocketSlashCommand command) => Task.CompletedTask;
 
-    protected static string GetStringOption(SocketSlashCommand command, string name)
-    {
-        return command.Data.Options?.FirstOrDefault(o => o.Name == name)?.Value?.ToString()
-            ?? throw new Exception(
-                $"Failed to construct input based on provided data: '{command}'"
-            );
-    }
-
     public static BotEnvironmentVariables EnsureEnvironmentVariables()
     {
         string[] requiredVars = ["DISCORD_BOT_TOKEN", "APPLICATION_ID"];
         var missing = requiredVars.Where(name => Environment.GetEnvironmentVariable(name) is null);
         var enumerable = missing as string[] ?? missing.ToArray();
-        if (enumerable.Any())
-            throw new Exception($"Missing environment variables: {string.Join(", ", enumerable)}");
-        return new BotEnvironmentVariables(Environment.GetEnvironmentVariable(requiredVars[0])!);
+        return enumerable.Length != 0
+            ? throw new Exception($"Missing environment variables: {string.Join(", ", enumerable)}")
+            : new BotEnvironmentVariables(Environment.GetEnvironmentVariable(requiredVars[0])!);
     }
 }
 

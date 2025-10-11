@@ -14,7 +14,7 @@ internal static partial class PreviewCleaner
             .Replace("<u>", "__", StringComparison.OrdinalIgnoreCase)
             .Replace("</u>", "__", StringComparison.OrdinalIgnoreCase);
 
-        cleaned = Regex.Replace(cleaned, "<img[^>]*>", string.Empty, RegexOptions.IgnoreCase);
+        cleaned = MyRegex().Replace(cleaned, string.Empty);
         cleaned = StripTags().Replace(cleaned, string.Empty);
         cleaned = CollapseBrTags().Replace(cleaned, "\n");
         cleaned = CollapseWhitespaceNewline().Replace(cleaned, "\n");
@@ -29,4 +29,6 @@ internal static partial class PreviewCleaner
 
     [GeneratedRegex(@"\s+\n")]
     private static partial Regex CollapseWhitespaceNewline();
+    [GeneratedRegex("<img[^>]*>", RegexOptions.IgnoreCase, "en-NO")]
+    private static partial Regex MyRegex();
 }

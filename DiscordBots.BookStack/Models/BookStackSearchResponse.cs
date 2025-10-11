@@ -9,22 +9,22 @@ namespace DiscordBots.BookStack.Models
         [JsonPropertyName("data")]
         public required IReadOnlyList<BookStackSearchResult> Data { get; init; }
 
-        public sealed class BookStackSearchResult
+        public sealed class BookStackSearchResult(string url, PreviewHtml previewHtml, string name)
         {
             [JsonPropertyName("name")]
-            public required string Name { get; init; }
+            public required string Name { get; init; } = name;
 
             [JsonPropertyName("url")]
-            public required string Url { get; init; }
+            public required string Url { get; init; } = url;
 
             [JsonPropertyName("preview_html")]
-            public required PreviewHtml PreviewHtml { get; init; }
+            public required PreviewHtml PreviewHtml { get; init; } = previewHtml;
         }
 
-        public sealed class PreviewHtml
+        public sealed class PreviewHtml(string content)
         {
             [JsonPropertyName("content")]
-            public required string Content { get; init; }
+            public required string Content { get; init; } = content;
         }
     }
 }

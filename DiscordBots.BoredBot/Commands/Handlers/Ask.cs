@@ -1,10 +1,8 @@
 using System.Text;
 using Discord.WebSocket;
-using DiscordBots.BookStack;
 using DiscordBots.BookStack.Interfaces;
 using DiscordBots.BookStack.Models;
 using DiscordBots.BoredBot.Commands.Interfaces;
-using DiscordBots.OpenAI;
 using DiscordBots.OpenAI.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -98,7 +96,7 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : IS
             }
             if (block.Length > maxLen)
             {
-                int idx = 0;
+                var idx = 0;
                 while (idx < block.Length)
                 {
                     var take = Math.Min(maxLen, block.Length - idx);

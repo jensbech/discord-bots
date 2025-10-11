@@ -27,37 +27,7 @@ public static class LoggerExtensions
         );
     }
 
-    public static void LogSlashCommand(
-        this ILogger logger,
-        SocketUser user,
-        ISocketMessageChannel channel,
-        string command,
-        string? input,
-        string? outcome = null
-    )
-    {
-        if (outcome is null)
-        {
-            logger.LogInformation(
-                "{Context} /{Command} {Input}",
-                BuildContext(user, channel),
-                command,
-                input
-            );
-        }
-        else
-        {
-            logger.LogInformation(
-                "{Context} /{Command} {Input} => {Outcome}",
-                BuildContext(user, channel),
-                command,
-                input,
-                outcome
-            );
-        }
-    }
-
-    public static void LogSlashCommandError(
+    private static void LogSlashCommandError(
         this ILogger logger,
         SocketUser user,
         ISocketMessageChannel channel,
@@ -73,15 +43,6 @@ public static class LoggerExtensions
             input,
             error
         );
-    }
-
-    public static void LogSlash(this ILogger logger, SocketSlashCommand cmd, string? outcome = null)
-    {
-        var input = cmd.Data.Options?.FirstOrDefault()?.Value?.ToString();
-        if (outcome is null)
-            logger.LogSlashCommand(cmd.User, cmd.Channel, cmd.CommandName, input, null);
-        else
-            logger.LogSlashCommand(cmd.User, cmd.Channel, cmd.CommandName, input, outcome);
     }
 
     public static void LogSlashError(this ILogger logger, SocketSlashCommand cmd, string error)
