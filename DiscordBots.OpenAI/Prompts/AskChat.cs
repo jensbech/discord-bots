@@ -1,6 +1,6 @@
 namespace DiscordBots.OpenAI
 {
-    public sealed class AskChat
+    public static class AskChat
     {
         public static (string system, string question) Get(string query, string[] documents)
         {

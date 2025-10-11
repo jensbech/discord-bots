@@ -1,16 +1,11 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using DiscordBots.OpenAI.Interfaces;
 using DiscordBots.OpenAI.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DiscordBots.OpenAI;
-
-public interface IOpenAiClient
-{
-    Task<string?> RulesChat(string question);
-    Task<string?> AskChat(string question, IReadOnlyList<string> documents);
-}
 
 internal sealed class OpenAiClient(
     HttpClient http,

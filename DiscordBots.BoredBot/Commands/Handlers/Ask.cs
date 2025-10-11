@@ -3,6 +3,7 @@ using Discord.WebSocket;
 using DiscordBots.BookStack;
 using DiscordBots.BookStack.Models;
 using DiscordBots.OpenAI;
+using DiscordBots.OpenAI.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands.Handlers;

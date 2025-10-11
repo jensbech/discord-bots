@@ -1,5 +1,6 @@
 using Discord.WebSocket;
 using DiscordBots.OpenAI;
+using DiscordBots.OpenAI.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot.Commands.Handlers;

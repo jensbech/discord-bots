@@ -6,6 +6,7 @@ using DiscordBots.BoredBot.Commands.Handlers;
 using DiscordBots.Core;
 using DiscordBots.Core.Logging;
 using DiscordBots.OpenAI;
+using DiscordBots.OpenAI.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot
