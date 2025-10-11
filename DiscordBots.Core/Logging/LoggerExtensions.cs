@@ -24,6 +24,12 @@ public static class LoggerExtensions
             message.Content
         );
     }
+    
+    public static void LogSlashError(this ILogger logger, SocketSlashCommand cmd, string error)
+    {
+        var input = cmd.Data.Options?.FirstOrDefault()?.Value?.ToString();
+        logger.LogSlashCommandError(cmd.User, cmd.Channel, cmd.CommandName, input, error);
+    }
 
     private static void LogSlashCommandError(
         this ILogger logger,
@@ -43,9 +49,4 @@ public static class LoggerExtensions
         );
     }
 
-    public static void LogSlashError(this ILogger logger, SocketSlashCommand cmd, string error)
-    {
-        var input = cmd.Data.Options?.FirstOrDefault()?.Value?.ToString();
-        logger.LogSlashCommandError(cmd.User, cmd.Channel, cmd.CommandName, input, error);
-    }
 }
