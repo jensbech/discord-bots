@@ -30,7 +30,7 @@ internal sealed class OpenAiClient(
 
     public async Task<string?> ReduceSearchQuery(string question)
     {
-        var systemPrompt = SearchQueryReducer.GetSystemPrompt();
+        var systemPrompt = QueryReducer.GetSystemPrompt();
         var res = await http.SendAsync(ConstructCompletionRequest(question, systemPrompt, "gpt-3.5-turbo"));
         return await EnsureChatAnswerString(res);
     }
@@ -53,7 +53,7 @@ internal sealed class OpenAiClient(
         {
             Model = modelOverride ?? options.Value.Model,
             Messages = messages,
-            Temperature = 0.2,
+            Temperature = 0.1,
         };
 
         req.Content = JsonContent.Create(chatRequest);
