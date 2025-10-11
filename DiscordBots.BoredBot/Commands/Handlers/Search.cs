@@ -22,7 +22,9 @@ internal sealed class Search(IBookStackClient bookStackClient) : ISlashCommandHa
 
         if (result == null || result.Data.Count == 0)
         {
-            await command.FollowupAsync($"Bored Gods Wiki gave no results for your query '{query}'.");
+            await command.FollowupAsync(
+                $"Bored Gods Wiki gave no results for your query '{query}'."
+            );
             logger.LogInformation("/search {Query} => 0 results", query);
             return;
         }

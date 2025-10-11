@@ -2,9 +2,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using DiscordBots.OpenAI.Interfaces;
 using DiscordBots.OpenAI.Models;
+using DiscordBots.OpenAI.Prompts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using DiscordBots.OpenAI.Prompts;
+
 namespace DiscordBots.OpenAI;
 
 internal sealed class OpenAiClient(
@@ -31,11 +32,17 @@ internal sealed class OpenAiClient(
     public async Task<string?> ReduceSearchQuery(string question)
     {
         var systemPrompt = QueryReducer.GetSystemPrompt();
-        var res = await http.SendAsync(ConstructCompletionRequest(question, systemPrompt, "gpt-3.5-turbo"));
+        var res = await http.SendAsync(
+            ConstructCompletionRequest(question, systemPrompt, "gpt-3.5-turbo")
+        );
         return await EnsureChatAnswerString(res);
     }
 
-    private HttpRequestMessage ConstructCompletionRequest(string question, string? systemPrompt, string? modelOverride = null)
+    private HttpRequestMessage ConstructCompletionRequest(
+        string question,
+        string? systemPrompt,
+        string? modelOverride = null
+    )
     {
         var req = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.Value.ApiKey);
@@ -48,8 +55,8 @@ internal sealed class OpenAiClient(
             messages.Add(new ChatMessage { Role = "system", Content = systemPrompt });
         }
         messages.Add(new ChatMessage { Role = "user", Content = question });
-        
-        var chatRequest = new 
+
+        var chatRequest = new
         {
             Model = modelOverride ?? options.Value.Model,
             Messages = messages,

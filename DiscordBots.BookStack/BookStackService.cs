@@ -1,3 +1,4 @@
+using System.Net;
 using DiscordBots.BookStack.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,12 +7,13 @@ namespace DiscordBots.BookStack;
 
 public static class BookStackService
 {
-    public static void Add(
-        this IServiceCollection services,
-        IConfiguration builderConfiguration
-    )
+    public static void Add(this IServiceCollection services, IConfiguration builderConfiguration)
     {
-        var baseUrl = EnsureEnvironmentVariable("BaseUrl", "BOOKSTACK_BASE_URL", builderConfiguration);
+        var baseUrl = EnsureEnvironmentVariable(
+            "BaseUrl",
+            "BOOKSTACK_BASE_URL",
+            builderConfiguration
+        );
         var apiId = EnsureEnvironmentVariable("ApiId", "BOOKSTACK_API_ID", builderConfiguration);
         var apiKey = EnsureEnvironmentVariable("ApiKey", "BOOKSTACK_API_KEY", builderConfiguration);
         // var guildId = EnsureEnvironmentVariable("GuildId", "BOOKSTACK_GUILD_ID", builderConfiguration);
@@ -42,7 +44,15 @@ public static class BookStackService
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
                 client.Timeout = TimeSpan.FromSeconds(30);
             })
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler())
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                new SocketsHttpHandler
+                {
+                    AutomaticDecompression =
+                        DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                    UseCookies = false,
+                    AllowAutoRedirect = false
+                }
+            )
             .ConfigureHttpClient(client =>
             {
                 client.DefaultRequestVersion = new Version(1, 1);

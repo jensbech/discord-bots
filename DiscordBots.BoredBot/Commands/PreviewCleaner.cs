@@ -29,6 +29,7 @@ internal static partial class PreviewCleaner
 
     [GeneratedRegex(@"\s+\n")]
     private static partial Regex CollapseWhitespaceNewline();
+
     [GeneratedRegex("<img[^>]*>", RegexOptions.IgnoreCase, "en-NO")]
     private static partial Regex MyRegex();
 }
