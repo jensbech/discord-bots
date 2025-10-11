@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.Core;
 
-public  class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
+public class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
 {
     private DiscordSocketClient DiscordSocketClient { get; } =
         new(
@@ -14,7 +14,7 @@ public  class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogg
                 GatewayIntents =
                     GatewayIntents.Guilds
                     | GatewayIntents.GuildMessages
-                    | GatewayIntents.MessageContent
+                    | GatewayIntents.MessageContent,
             }
         );
 

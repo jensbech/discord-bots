@@ -25,7 +25,7 @@ public class BoredBaseDiscordBot(
             new Search(bookStackClient),
             new Chat(openAiClient),
             new Ask(bookStackClient, openAiClient),
-            new Help()
+            new Help(),
         }.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
 
     protected override async Task OnSlashCommandAsync(SocketSlashCommand command)

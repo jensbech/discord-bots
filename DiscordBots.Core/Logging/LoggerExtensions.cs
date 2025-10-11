@@ -24,7 +24,7 @@ public static class LoggerExtensions
             message.Content
         );
     }
-    
+
     public static void LogSlashError(this ILogger logger, SocketSlashCommand cmd, string error)
     {
         var input = cmd.Data.Options?.FirstOrDefault()?.Value?.ToString();
@@ -48,5 +48,4 @@ public static class LoggerExtensions
             error
         );
     }
-
 }

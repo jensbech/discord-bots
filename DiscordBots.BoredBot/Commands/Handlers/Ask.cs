@@ -33,11 +33,21 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : IS
 
             if (docs.Count == 0)
             {
-                logger.LogInformation("/ask {Question} => no initial results, attempting query reduction", question);
+                logger.LogInformation(
+                    "/ask {Question} => no initial results, attempting query reduction",
+                    question
+                );
                 var reduced = await openAi.ReduceSearchQuery(question);
-                if (!string.IsNullOrWhiteSpace(reduced) && !reduced.Equals(question, StringComparison.OrdinalIgnoreCase))
+                if (
+                    !string.IsNullOrWhiteSpace(reduced)
+                    && !reduced.Equals(question, StringComparison.OrdinalIgnoreCase)
+                )
                 {
-                    logger.LogInformation("/ask {Question} => reduced query: {Reduced}", question, reduced);
+                    logger.LogInformation(
+                        "/ask {Question} => reduced query: {Reduced}",
+                        question,
+                        reduced
+                    );
                     var retryResponse = await bookStack.SearchAsync(reduced);
                     sources.Clear();
                     if (retryResponse?.Data != null)
@@ -46,24 +56,37 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : IS
                     }
                     if (docs.Count == 0)
                     {
-                        var noResMsg = await command.FollowupAsync($"No results for '{question}' (reduced to '{reduced}').");
+                        var noResMsg = await command.FollowupAsync(
+                            $"No results for '{question}' (reduced to '{reduced}')."
+                        );
                         TrySuppressEmbeds(noResMsg, logger);
-                        logger.LogInformation("/ask {Question} => no results after reduction", question);
+                        logger.LogInformation(
+                            "/ask {Question} => no results after reduction",
+                            question
+                        );
                         return;
                     }
                 }
                 else if (string.IsNullOrWhiteSpace(reduced))
                 {
-                    var failMsg = await command.FollowupAsync($"No results for '{question}'. (Query reduction failed)");
+                    var failMsg = await command.FollowupAsync(
+                        $"No results for '{question}'. (Query reduction failed)"
+                    );
                     TrySuppressEmbeds(failMsg, logger);
-                    logger.LogInformation("/ask {Question} => no results and reduction failed", question);
+                    logger.LogInformation(
+                        "/ask {Question} => no results and reduction failed",
+                        question
+                    );
                     return;
                 }
                 else
                 {
                     var noResMsg = await command.FollowupAsync($"No results for '{question}'.");
                     TrySuppressEmbeds(noResMsg, logger);
-                    logger.LogInformation("/ask {Question} => no results even after identical reduction", question);
+                    logger.LogInformation(
+                        "/ask {Question} => no results even after identical reduction",
+                        question
+                    );
                     return;
                 }
             }
@@ -86,7 +109,12 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : IS
 
             if (sources.Count > 0)
             {
-                var srcMsgText = "Sources:\n" + string.Join("\n", sources.Take(3).Select((s, _) => $"- {ToMarkdownLink(s.Title, s.Url)}"));
+                var srcMsgText =
+                    "Sources:\n"
+                    + string.Join(
+                        "\n",
+                        sources.Take(3).Select((s, _) => $"- {ToMarkdownLink(s.Title, s.Url)}")
+                    );
                 var srcMsg = await command.FollowupAsync(srcMsgText);
                 TrySuppressEmbeds(srcMsg, logger);
             }
@@ -106,17 +134,44 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : IS
         List<(string Title, string Url)> sources
     )
     {
-        var list = new List<string>();
-        foreach (var r in results)
+        const int maxParallel = 50;
+        var semaphore = new SemaphoreSlim(maxParallel);
+
+        var tasks = results.Select(async r =>
         {
-            var html = await bookStack.GetEntityHtmlAsync(r.Type, r.Id);
-            if (html is null) continue;
+            await semaphore.WaitAsync();
+            try
+            {
+                var html = await bookStack.GetEntityHtmlAsync(r.Type, r.Id);
+                return (Result: r, Html: html);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }).ToList();
+
+        var fetched = await Task.WhenAll(tasks);
+
+        var list = new List<string>();
+        foreach (var item in fetched)
+        {
+            var r = item.Result;
+            var html = item.Html;
+            if (html is null)
+                continue;
             var preview = PreviewCleaner.Clean(r.PreviewHtml.Content);
             if (sources.Count < 3)
             {
                 sources.Add((r.Name, r.Url));
             }
-            var header = $"Title: {r.Name}\nURL: <{r.Url}>" + (string.IsNullOrWhiteSpace(preview) ? string.Empty : $"\nPreview: {(preview.Length > 400 ? preview[..400] + "…" : preview)}");
+            var header =
+                $"Title: {r.Name}\nURL: <{r.Url}>"
+                + (
+                    string.IsNullOrWhiteSpace(preview)
+                        ? string.Empty
+                        : $"\nPreview: {(preview.Length > 400 ? preview[..400] + "…" : preview)}"
+                );
             var body = html.Length > 2500 ? html[..2500] + "…" : html;
             list.Add(header + "\n\n" + body);
         }
@@ -125,18 +180,31 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : IS
 
     private static IEnumerable<string> Split(string text)
     {
-        const int max = 1900; var parts = text.Split("\n\n"); var sb = new StringBuilder();
+        const int max = 1900;
+        var parts = text.Split("\n\n");
+        var sb = new StringBuilder();
         foreach (var p in parts)
         {
             var b = p.TrimEnd();
-            if (sb.Length + b.Length + 2 > max && sb.Length > 0) { yield return sb.ToString(); sb.Clear(); }
+            if (sb.Length + b.Length + 2 > max && sb.Length > 0)
+            {
+                yield return sb.ToString();
+                sb.Clear();
+            }
             if (b.Length > max)
             {
-                for (var i = 0; i < b.Length; i += max) yield return b.Substring(i, Math.Min(max, b.Length - i));
+                for (var i = 0; i < b.Length; i += max)
+                    yield return b.Substring(i, Math.Min(max, b.Length - i));
             }
-            else { if (sb.Length > 0) sb.Append('\n').Append('\n'); sb.Append(b); }
+            else
+            {
+                if (sb.Length > 0)
+                    sb.Append('\n').Append('\n');
+                sb.Append(b);
+            }
         }
-        if (sb.Length > 0) yield return sb.ToString();
+        if (sb.Length > 0)
+            yield return sb.ToString();
     }
 
     private static string ToMarkdownLink(string title, string url)
@@ -147,7 +215,8 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : IS
 
     private static void TrySuppressEmbeds(IUserMessage? msg, ILogger logger)
     {
-        if (msg is null) return;
+        if (msg is null)
+            return;
         try
         {
             msg.ModifyAsync(p => p.Flags = MessageFlags.SuppressEmbeds);

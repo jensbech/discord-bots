@@ -13,7 +13,7 @@ public static class Dice
 public enum Critical
 {
     Fail,
-    Success
+    Success,
 }
 
 public class DiceParseResult
