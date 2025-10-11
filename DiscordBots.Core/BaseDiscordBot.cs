@@ -61,7 +61,9 @@ public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] command
     private Task LogIncomingMessage(SocketMessage message)
     {
         if (message.Author.IsBot)
+        {
             return Task.CompletedTask;
+        }
 
         logger.LogIncomingUserMessage(message);
         return Task.CompletedTask;

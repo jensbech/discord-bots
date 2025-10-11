@@ -18,8 +18,6 @@ public static class LoggerExtensions
 
     public static void LogIncomingUserMessage(this ILogger logger, SocketMessage message)
     {
-        if (message.Author.IsBot)
-            return;
         logger.LogInformation(
             "{Context} {Content}",
             BuildContext(message.Author, message.Channel),
