@@ -24,10 +24,10 @@ public static class Program
                 : LogLevel.Information
         );
 
-        builder.Services.AddBookStackService(builder.Configuration);
+        builder.Services.Add(builder.Configuration);
         builder.Services.AddOpenAi(builder.Configuration);
         builder.Services.AddSingleton(CommandBuilders.Commands);
-        builder.Services.AddHostedService<DiscordBotService<BoredBot>>();
+        builder.Services.AddHostedService<BotService<BoredBaseDiscordBot>>();
 
         var app = builder.Build();
 
@@ -35,10 +35,10 @@ public static class Program
             "/webhooks/new_post",
             async (
                 HttpRequest request,
-                BoredBot bot,
+                BoredBaseDiscordBot baseDiscordBot,
                 ILogger<NewPost> logger,
                 IOptions<BookStackOptions> bookstackOptions
-            ) => await NewPost.SendAsync(request, bot, logger, bookstackOptions)
+            ) => await NewPost.SendAsync(request, baseDiscordBot, logger, bookstackOptions)
         );
 
         await app.RunAsync();

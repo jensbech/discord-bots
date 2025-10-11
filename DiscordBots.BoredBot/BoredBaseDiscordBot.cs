@@ -10,10 +10,10 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot;
 
-public abstract class BoredBot(
+public abstract class BoredBaseDiscordBot(
     string token,
     SlashCommandBuilder[] commands,
-    ILogger<BoredBot> logger,
+    ILogger<BoredBaseDiscordBot> logger,
     IBookStackClient bookStackClient,
     IOpenAiClient openAiClient
 ) : BaseDiscordBot(token, commands, logger)

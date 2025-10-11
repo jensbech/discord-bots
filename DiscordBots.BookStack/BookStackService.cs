@@ -4,18 +4,18 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordBots.BookStack;
 
-public static class ServiceCollectionExtensions
+public static class BookStackService
 {
-    public static void AddBookStackService(
+    public static void Add(
         this IServiceCollection services,
         IConfiguration builderConfiguration
     )
     {
-        var baseUrl = Ensure("BaseUrl", "BOOKSTACK_BASE_URL", builderConfiguration);
-        var apiId = Ensure("ApiId", "BOOKSTACK_API_ID", builderConfiguration);
-        var apiKey = Ensure("ApiKey", "BOOKSTACK_API_KEY", builderConfiguration);
-        var guildId = Ensure("GuildId", "BOOKSTACK_GUILD_ID", builderConfiguration);
-        var channelId = Ensure("ChannelId", "BOOKSTACK_CHANNEL_ID", builderConfiguration);
+        var baseUrl = EnsureEnvironmentVariable("BaseUrl", "BOOKSTACK_BASE_URL", builderConfiguration);
+        var apiId = EnsureEnvironmentVariable("ApiId", "BOOKSTACK_API_ID", builderConfiguration);
+        var apiKey = EnsureEnvironmentVariable("ApiKey", "BOOKSTACK_API_KEY", builderConfiguration);
+        var guildId = EnsureEnvironmentVariable("GuildId", "BOOKSTACK_GUILD_ID", builderConfiguration);
+        var channelId = EnsureEnvironmentVariable("ChannelId", "BOOKSTACK_CHANNEL_ID", builderConfiguration);
 
         var baseUrlTrimmed = baseUrl.TrimEnd('/');
 
@@ -50,7 +50,7 @@ public static class ServiceCollectionExtensions
             });
     }
 
-    private static string Ensure(
+    private static string EnsureEnvironmentVariable(
         string keySuffix,
         string envVar,
         IConfiguration appBuilderConfiguration

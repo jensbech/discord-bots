@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.Core;
 
-public class DiscordBotService<TBot>(
-    ILogger<DiscordBotService<TBot>> logger,
+public class BotService<TBot>(
+    ILogger<BotService<TBot>> logger,
     ILogger<TBot> botLogger,
     IServiceProvider serviceProvider,
     SlashCommandBuilder[] commands,
