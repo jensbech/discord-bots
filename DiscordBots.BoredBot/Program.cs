@@ -25,6 +25,7 @@ public static class Program
         );
 
         builder.Services.Add(builder.Configuration);
+        builder.Services.AddSingleton("Bored Bot");
         builder.Services.AddOpenAi(builder.Configuration);
         builder.Services.AddSingleton(CommandBuilders.Commands);
         builder.Services.AddHostedService<BotService<BoredBaseDiscordBot>>();

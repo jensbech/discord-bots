@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.BoredBot;
 
-public abstract class BoredBaseDiscordBot(
+public class BoredBaseDiscordBot(
     string token,
     SlashCommandBuilder[] commands,
     ILogger<BoredBaseDiscordBot> logger,

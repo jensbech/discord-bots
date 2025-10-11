@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.Core;
 
-public abstract class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
+public  class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
 {
     private DiscordSocketClient DiscordSocketClient { get; } =
         new(

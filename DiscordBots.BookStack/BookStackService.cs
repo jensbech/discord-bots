@@ -14,8 +14,8 @@ public static class BookStackService
         var baseUrl = EnsureEnvironmentVariable("BaseUrl", "BOOKSTACK_BASE_URL", builderConfiguration);
         var apiId = EnsureEnvironmentVariable("ApiId", "BOOKSTACK_API_ID", builderConfiguration);
         var apiKey = EnsureEnvironmentVariable("ApiKey", "BOOKSTACK_API_KEY", builderConfiguration);
-        var guildId = EnsureEnvironmentVariable("GuildId", "BOOKSTACK_GUILD_ID", builderConfiguration);
-        var channelId = EnsureEnvironmentVariable("ChannelId", "BOOKSTACK_CHANNEL_ID", builderConfiguration);
+        // var guildId = EnsureEnvironmentVariable("GuildId", "BOOKSTACK_GUILD_ID", builderConfiguration);
+        // var channelId = EnsureEnvironmentVariable("ChannelId", "BOOKSTACK_CHANNEL_ID", builderConfiguration);
 
         var baseUrlTrimmed = baseUrl.TrimEnd('/');
 
@@ -29,8 +29,8 @@ public static class BookStackService
         {
             o.ApiId = apiId;
             o.ApiKey = apiKey;
-            o.GuildId = guildId;
-            o.ChannelId = channelId;
+            // o.GuildId = guildId;
+            // o.ChannelId = channelId;
         });
 
         services

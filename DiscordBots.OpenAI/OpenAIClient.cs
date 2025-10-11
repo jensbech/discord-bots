@@ -4,7 +4,6 @@ using DiscordBots.OpenAI.Interfaces;
 using DiscordBots.OpenAI.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
 namespace DiscordBots.OpenAI;
 
 internal sealed class OpenAiClient(
@@ -38,11 +37,17 @@ internal sealed class OpenAiClient(
 
         if (!string.IsNullOrEmpty(systemPrompt))
         {
-            messages.Add(new ChatMessage { Content = systemPrompt });
+            messages.Add(new ChatMessage { Role = "system", Content = systemPrompt });
         }
-        messages.Add(new ChatMessage { Content = question });
+        messages.Add(new ChatMessage { Role = "user", Content = question });
+        
+        var chatRequest = new 
+        {
+            options.Value.Model,
+            Messages = messages,
+        };
 
-        req.Content = JsonContent.Create(new ChatCompletionRequest());
+        req.Content = JsonContent.Create(chatRequest);
         return req;
     }
 
