@@ -9,8 +9,8 @@ services:
       BOOKSTACK_BASE_URL: ${BOOKSTACK_BASE_URL:?BOOKSTACK_BASE_URL is required but not set}
       BOOKSTACK_API_ID: ${BOOKSTACK_API_ID:?BOOKSTACK_API_ID is required but not set}
       BOOKSTACK_API_KEY: ${BOOKSTACK_API_KEY:?BOOKSTACK_API_KEY is required but not set}
-      BOOKSTACK_GUILD_ID: ${BOOKSTACK_GUILD_ID:?BOOKSTACK_GUILD_ID is required but not set}
-      BOOKSTACK_CHANNEL_ID: ${BOOKSTACK_CHANNEL_ID:?BOOKSTACK_CHANNEL_ID is required but not set}
+      # BOOKSTACK_GUILD_ID: ${BOOKSTACK_GUILD_ID:?BOOKSTACK_GUILD_ID is required but not set}
+      # BOOKSTACK_CHANNEL_ID: ${BOOKSTACK_CHANNEL_ID:?BOOKSTACK_CHANNEL_ID is required but not set}
       OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required but not set}
       GUILD_ID: ${GUILD_ID:?GUILD_ID is required but not set}
       OPENAI_PROJECT: ${OPENAI_PROJECT:?OPENAI_PROJECT is required but not set}
