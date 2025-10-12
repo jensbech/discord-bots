@@ -24,9 +24,9 @@ public static class Program
                 : LogLevel.Information
         );
 
-        builder.Services.Add(builder.Configuration);
+        BookStackService.Add(builder.Services, builder.Configuration);
+        OpenAiService.Add(builder.Services, builder.Configuration);
         builder.Services.AddSingleton("Bored Bot");
-        builder.Services.AddOpenAi(builder.Configuration);
         builder.Services.AddSingleton(CommandBuilders.Commands);
         builder.Services.AddHostedService<BotService<BoredBaseDiscordBot>>();
 

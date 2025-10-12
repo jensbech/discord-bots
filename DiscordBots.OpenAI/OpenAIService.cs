@@ -6,9 +6,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.OpenAI;
 
-public static class ServiceCollectionExtensions
+public static class OpenAiService
 {
-    public static void AddOpenAi(this IServiceCollection services, IConfiguration config)
+    public static void Add(this IServiceCollection appServices, IConfiguration config)
     {
         var apiKey =
             Get("ApiKey", "OPENAI_API_KEY")
@@ -22,20 +22,20 @@ public static class ServiceCollectionExtensions
         var org = Get("Organization", "OPENAI_ORG");
         var project = Get("Project", "OPENAI_PROJECT");
 
-        services.Configure<OpenAiOptions>(options =>
+        appServices.Configure<OpenAiOptions>(options =>
         {
             options.ApiKey = apiKey;
             options.Project = project;
         });
 
-        services.AddHttpClient<IOpenAiClient, OpenAiClient>(client =>
+        appServices.AddHttpClient<IOpenAiClient, OpenAiClient>(client =>
         {
             client.BaseAddress = new Uri(baseUrl);
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Add("User-Agent", "DiscordBots/OpenAIClient");
         });
 
-        services.AddSingleton<IHostedService>(sp => new OpenAiConfigLogger(
+        appServices.AddSingleton<IHostedService>(sp => new OpenAiConfigLogger(
             sp.GetRequiredService<ILogger<OpenAiConfigLogger>>(),
             baseUrl,
             model,
