@@ -14,7 +14,7 @@ public class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogge
                 GatewayIntents =
                     GatewayIntents.Guilds
                     | GatewayIntents.GuildMessages
-                    | GatewayIntents.MessageContent,
+                    // | GatewayIntents.MessageContent,
             }
         );
 
@@ -139,7 +139,7 @@ public class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogge
 
     public static BotEnvironmentVariables EnsureEnvironmentVariables()
     {
-        string[] requiredVars = ["DISCORD_BOT_TOKEN", "APPLICATION_ID"];
+        string[] requiredVars = ["DISCORD_BOT_TOKEN", "DISCORD_BOT_APPLICATION_ID"];
         var missing = requiredVars.Where(name => Environment.GetEnvironmentVariable(name) is null);
         var enumerable = missing as string[] ?? missing.ToArray();
         return enumerable.Length != 0
