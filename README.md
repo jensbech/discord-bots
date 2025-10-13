@@ -1,8 +1,8 @@
 My app for hosting Discord bots.
 
 Discord commands:
-- `/ask` about source material from the wiki. Article results from initial key word query is fed into AI to provide the user with an accurate answer.
-- `/rules` to query AI about DnD rules.
+- `/ask` about source material from the Bookstack instance. User input is processed and optionally reduced for clarity. The final input is passed to as a query to Bookstack API, which returns X articles containing the search params. The article contents retrieved from Bookstack are then fed into LLM model in order to extract information relevant to the initial user question. The LLm response is then returned back to the user.
+- `/rules` to ask an LLM about DnD rules.
 - `/roll` dice (e.g. `/roll 2d20+3`).
 - `/help`
 
@@ -33,6 +33,13 @@ Run:
 
 On Docker Hub: https://hub.docker.com/r/jensbech/discord-bots
 
-# Todo:
+---
+
+# Must haves:
 - Rename env vars for more clarity, update all necessary places.
 - Implement webhook feature.
+
+# Nice to haves:
+- LLM memory / context across questions. User and/or time-based.
+- Music embeds on critical dice rolls. Support users uploading their preferred theme as self-service.
+- Feature: `/tldr` Query to summarize the last X messages or back in time in the Discord server, in the current channel. Pass messages and handle them with an LLM
