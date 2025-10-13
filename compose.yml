@@ -29,7 +29,7 @@ services:
           "aux",
           "|",
           "grep",
-          "DiscordBots.BoredBot.dll",
+          "DiscordBots.Scribe.dll",
           "|",
           "grep",
           "-v",
