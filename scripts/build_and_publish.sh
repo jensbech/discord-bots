@@ -3,7 +3,7 @@ set -e
 
 MAJOR_VERSION="1"
 
-IMAGE_NAME=${1:-"jensbech/bored-bot"}
+IMAGE_NAME=${1:-"jensbech/discord-bots"}
 PLATFORMS=${PLATFORMS:-"linux/amd64"}
 
 
@@ -50,7 +50,7 @@ docker buildx build \
     --tag "$IMAGE_NAME:latest" \
     --tag "$IMAGE_NAME:$VERSION" \
     $build_args \
-    --file DiscordBots.BoredBot/Dockerfile \
+    --file Dockerfile \
     --push \
     .
 

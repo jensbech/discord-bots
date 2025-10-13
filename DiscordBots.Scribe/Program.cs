@@ -2,12 +2,12 @@ using DiscordBots.BookStack;
 using DiscordBots.Core;
 using DiscordBots.OpenAI;
 using DiscordBots.Scribe.Commands;
-using DiscordBots.Scribe.Webhooks;
+// using DiscordBots.Scribe.Webhooks;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
+// using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+// using Microsoft.Extensions.Options;
 
 namespace DiscordBots.Scribe;
 
@@ -38,15 +38,15 @@ public static class Program
 
         var app = builder.Build();
 
-        app.MapPost(
-            "/webhooks/new_post",
-            async (
-                HttpRequest request,
-                ScribeBotBase @base,
-                ILogger<NewPost> logger,
-                IOptions<BookStackOptions> bookstackOptions
-            ) => await NewPost.SendAsync(request, @base, logger, bookstackOptions)
-        );
+        // app.MapPost(
+        //     "/webhooks/new_post",
+        //     async (
+        //         HttpRequest request,
+        //         ScribeBotBase @base,
+        //         ILogger<NewPost> logger,
+        //         IOptions<BookStackOptions> bookstackOptions
+        //     ) => await NewPost.SendAsync(request, @base, logger, bookstackOptions)
+        // );
 
         await app.RunAsync();
     }

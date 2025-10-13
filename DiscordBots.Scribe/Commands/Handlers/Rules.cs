@@ -5,9 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.Scribe.Commands.Handlers;
 
-internal sealed class Chat(IOpenAiClient openAiClient) : ISlashCommandHandler
+internal sealed class Rules(IOpenAiClient openAiClient) : ISlashCommandHandler
 {
-    public string Name => "chat";
+    public string Name => "rules";
 
     public async Task HandleAsync(SocketSlashCommand command, ILogger logger)
     {
@@ -19,6 +19,6 @@ internal sealed class Chat(IOpenAiClient openAiClient) : ISlashCommandHandler
 
         var response = await openAiClient.RulesChat(question);
         await command.FollowupAsync(response);
-        logger.LogInformation("/chat answered");
+        logger.LogInformation("/rules answered");
     }
 }

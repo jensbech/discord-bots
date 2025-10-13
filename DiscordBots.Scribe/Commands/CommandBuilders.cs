@@ -16,16 +16,7 @@ namespace DiscordBots.Scribe.Commands
                         isRequired: true
                     ),
                 new SlashCommandBuilder()
-                    .WithName("search")
-                    .WithDescription("Search the BookStack knowledge base")
-                    .AddOption(
-                        name: "query",
-                        type: ApplicationCommandOptionType.String,
-                        description: "Words to search for",
-                        isRequired: true
-                    ),
-                new SlashCommandBuilder()
-                    .WithName("chat")
+                    .WithName("rules")
                     .WithDescription("Ask questions about D&D 5E rules")
                     .AddOption(
                         name: "question",
@@ -35,7 +26,7 @@ namespace DiscordBots.Scribe.Commands
                     ),
                 new SlashCommandBuilder()
                     .WithName("ask")
-                    .WithDescription("Ask a question answered from BookStack content via AI")
+                    .WithDescription("Ask any question answered from the Wiki contents")
                     .AddOption(
                         name: "question",
                         type: ApplicationCommandOptionType.String,

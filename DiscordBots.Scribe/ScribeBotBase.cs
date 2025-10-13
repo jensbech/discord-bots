@@ -23,8 +23,7 @@ public abstract class ScribeBotBase(
         new List<ISlashCommandHandler>
         {
             new Roll(),
-            new Search(bookStackClient),
-            new Chat(openAiClient),
+            new Rules(openAiClient),
             new Ask(bookStackClient, openAiClient),
             new Help(),
         }.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
