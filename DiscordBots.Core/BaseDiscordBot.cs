@@ -5,8 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace DiscordBots.Core;
 
-public class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogger logger)
+public class BaseDiscordBot(string token, string botName, SlashCommandBuilder[] commands, ILogger logger)
 {
+    protected readonly string BotName = botName;
+
     private DiscordSocketClient DiscordSocketClient { get; } =
         new(
             new DiscordSocketConfig
@@ -69,9 +71,9 @@ public class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogge
         return Task.CompletedTask;
     }
 
-    public async Task InitializeAsync(string botName)
+    public async Task InitializeAsync()
     {
-        logger.LogInformation("Initializing bot '{BotName}'...", botName);
+        logger.LogInformation("Initializing bot '{BotName}'...", BotName);
         try
         {
             await LoginAsync();
@@ -82,14 +84,14 @@ public class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogge
                 try
                 {
                     await RegisterCommandsAsync();
-                    logger.LogInformation("{BotName} is ready! :)", botName);
+                    logger.LogInformation("{BotName} is ready! :)", BotName);
                 }
                 catch (Exception inner)
                 {
                     logger.LogError(
                         inner,
                         "Initialization error (post-ready) for {BotName}",
-                        botName
+                        BotName
                     );
                 }
             };
@@ -97,7 +99,7 @@ public class BaseDiscordBot(string token, SlashCommandBuilder[] commands, ILogge
         }
         catch (Exception error)
         {
-            logger.LogError(error, "Initialization error for {BotName}", botName);
+            logger.LogError(error, "Initialization error for {BotName}", BotName);
         }
     }
 

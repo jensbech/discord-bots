@@ -1,9 +1,9 @@
 using Discord.WebSocket;
-using DiscordBots.BoredBot.Commands.Interfaces;
-using DiscordBots.BoredBot.Dice;
+using DiscordBots.Scribe.Commands.Interfaces;
+using DiscordBots.Scribe.Dice;
 using Microsoft.Extensions.Logging;
 
-namespace DiscordBots.BoredBot.Commands.Handlers;
+namespace DiscordBots.Scribe.Commands.Handlers;
 
 internal sealed class Roll : ISlashCommandHandler
 {

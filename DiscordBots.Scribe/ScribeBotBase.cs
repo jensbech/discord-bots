@@ -1,22 +1,23 @@
 using Discord;
 using Discord.WebSocket;
 using DiscordBots.BookStack.Interfaces;
-using DiscordBots.BoredBot.Commands.Handlers;
-using DiscordBots.BoredBot.Commands.Interfaces;
 using DiscordBots.Core;
 using DiscordBots.Core.Logging;
 using DiscordBots.OpenAI.Interfaces;
+using DiscordBots.Scribe.Commands.Handlers;
+using DiscordBots.Scribe.Commands.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
-namespace DiscordBots.BoredBot;
+namespace DiscordBots.Scribe;
 
-public class BoredBaseDiscordBot(
-    string token,
+public abstract class ScribeBotBase(
+    IOptions<ScribeBotOptions> options,
     SlashCommandBuilder[] commands,
-    ILogger<BoredBaseDiscordBot> logger,
+    ILogger<ScribeBotBase> logger,
     IBookStackClient bookStackClient,
     IOpenAiClient openAiClient
-) : BaseDiscordBot(token, commands, logger)
+) : BaseDiscordBot(options.Value.Token, options.Value.BotName, commands, logger)
 {
     private readonly IReadOnlyDictionary<string, ISlashCommandHandler> _handlers =
         new List<ISlashCommandHandler>

@@ -4,7 +4,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordBots.Core", "DiscordBots.Core\DiscordBots.Core.csproj", "{11111111-1111-1111-1111-111111111111}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordBots.BoredBot", "DiscordBots.BoredBot\DiscordBots.BoredBot.csproj", "{22222222-2222-2222-2222-222222222222}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordBots.Scribe", "DiscordBots.Scribe\DiscordBots.Scribe.csproj", "{22222222-2222-2222-2222-222222222222}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordBots.BookStack", "DiscordBots.BookStack\DiscordBots.BookStack.csproj", "{33333333-3333-3333-3333-333333333333}"
 EndProject

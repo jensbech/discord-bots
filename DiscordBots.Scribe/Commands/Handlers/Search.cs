@@ -1,10 +1,10 @@
 using Discord;
 using Discord.WebSocket;
 using DiscordBots.BookStack.Interfaces;
-using DiscordBots.BoredBot.Commands.Interfaces;
+using DiscordBots.Scribe.Commands.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace DiscordBots.BoredBot.Commands.Handlers;
+namespace DiscordBots.Scribe.Commands.Handlers;
 
 internal sealed class Search(IBookStackClient bookStackClient) : ISlashCommandHandler
 {

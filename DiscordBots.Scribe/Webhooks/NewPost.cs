@@ -5,13 +5,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DiscordBots.BoredBot.Webhooks;
+namespace DiscordBots.Scribe.Webhooks;
 
 public class NewPost
 {
     public static async Task<IResult> SendAsync(
         HttpRequest request,
-        BoredBaseDiscordBot boredBaseDiscordBot,
+        ScribeBotBase scribeBotBase,
         ILogger<NewPost> logger,
         IOptions<BookStackOptions> options
     )
@@ -30,7 +30,7 @@ public class NewPost
             var guildId = ulong.Parse(options.Value.GuildId);
             var channelId = ulong.Parse(options.Value.ChannelId);
 
-            var botClient = boredBaseDiscordBot.DiscordClient;
+            var botClient = scribeBotBase.DiscordClient;
             var guild = botClient.GetGuild(guildId);
             var channel = guild.GetTextChannel(channelId);
 

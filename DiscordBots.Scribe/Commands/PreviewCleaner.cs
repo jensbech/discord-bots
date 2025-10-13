@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace DiscordBots.BoredBot.Commands;
+namespace DiscordBots.Scribe.Commands;
 
 internal static partial class PreviewCleaner
 {

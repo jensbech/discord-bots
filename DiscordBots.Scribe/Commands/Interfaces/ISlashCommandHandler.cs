@@ -1,7 +1,7 @@
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 
-namespace DiscordBots.BoredBot.Commands.Interfaces;
+namespace DiscordBots.Scribe.Commands.Interfaces;
 
 public interface ISlashCommandHandler
 {

@@ -8,7 +8,7 @@ namespace DiscordBots.OpenAI;
 
 public static class OpenAiService
 {
-    public static void Add(this IServiceCollection appServices, IConfiguration config)
+    public static void AddService(this IServiceCollection appServices, IConfiguration config)
     {
         var apiKey =
             Get("ApiKey", "OPENAI_API_KEY")

@@ -7,7 +7,7 @@ namespace DiscordBots.BookStack;
 
 public static class BookStackService
 {
-    public static void Add(this IServiceCollection services, IConfiguration builderConfiguration)
+    public static void AddService(this IServiceCollection services, IConfiguration builderConfiguration)
     {
         var baseUrl = EnsureEnvironmentVariable(
             "BaseUrl",

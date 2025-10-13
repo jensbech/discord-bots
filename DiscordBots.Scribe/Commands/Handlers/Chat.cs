@@ -1,9 +1,9 @@
 using Discord.WebSocket;
-using DiscordBots.BoredBot.Commands.Interfaces;
 using DiscordBots.OpenAI.Interfaces;
+using DiscordBots.Scribe.Commands.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace DiscordBots.BoredBot.Commands.Handlers;
+namespace DiscordBots.Scribe.Commands.Handlers;
 
 internal sealed class Chat(IOpenAiClient openAiClient) : ISlashCommandHandler
 {

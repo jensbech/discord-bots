@@ -9,8 +9,7 @@ public class BotService<TBot>(
     ILogger<BotService<TBot>> logger,
     ILogger<TBot> botLogger,
     IServiceProvider serviceProvider,
-    SlashCommandBuilder[] commands,
-    string botName
+    SlashCommandBuilder[] commands
 ) : BackgroundService
     where TBot : BaseDiscordBot
 {
@@ -18,32 +17,30 @@ public class BotService<TBot>(
     {
         try
         {
-            logger.LogInformation("Starting {BotName} service...", botName);
-            var environmentVariables = BaseDiscordBot.EnsureEnvironmentVariables();
+            logger.LogInformation("Starting bot service...");
             var bot = ActivatorUtilities.CreateInstance<TBot>(
                 serviceProvider,
-                environmentVariables.DiscordBotToken,
                 commands,
                 botLogger
             );
-            await bot.InitializeAsync(botName);
-            logger.LogInformation("{BotName} service started successfully", botName);
+            await bot.InitializeAsync();
+            logger.LogInformation("Bot service started successfully");
             _ = Task.Delay(Timeout.Infinite, stoppingToken);
         }
         catch (OperationCanceledException)
         {
-            logger.LogInformation("{BotName} service is stopping...", botName);
+            logger.LogInformation("Bot service is stopping...");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error in {BotName} service", botName);
+            logger.LogError(ex, "Error in bot service");
             throw;
         }
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("{BotName} service stopped", botName);
+        logger.LogInformation("Bot service stopped");
         await base.StopAsync(cancellationToken);
     }
 }

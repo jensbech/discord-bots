@@ -1,4 +1,4 @@
-namespace DiscordBots.BoredBot.Dice;
+namespace DiscordBots.Scribe.Dice;
 
 public static class Dice
 {

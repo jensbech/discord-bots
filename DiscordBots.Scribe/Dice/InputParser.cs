@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
-namespace DiscordBots.BoredBot.Dice;
+namespace DiscordBots.Scribe.Dice;
 
 public static partial class InputParser
 {
