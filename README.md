@@ -21,7 +21,6 @@ Required environment variables:
 - `OPENAI_API_KEY`
 - `OPENAI_PROJECT`
 
-// Todo: Rename env vars for more clarity.
 
 Stage environment secrets with Bitwarden Secrets Manager CLI
 - Set BitWarden server: `bws config server-base https://vault.bitwarden.eu`.
@@ -33,3 +32,7 @@ Run:
 - `bws run --project-id $BORED_GODS_DEV_BWS_PROJECT_ID -- docker compose up -d`
 
 On Docker Hub: https://hub.docker.com/r/jensbech/discord-bots
+
+# Todo:
+- Rename env vars for more clarity, update all necessary places.
+- Implement webhook feature.
