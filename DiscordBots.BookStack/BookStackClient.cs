@@ -63,6 +63,18 @@ internal sealed class BookStackClient(
         using var res = await http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
      
         var body = await res.Content.ReadAsStringAsync();
+        
+        // Log response details for debugging
+        logger.LogInformation("BookStack API Response: Status={Status}, Body length={Length}", 
+            res.StatusCode, body?.Length ?? 0);
+        
+        if (!res.IsSuccessStatusCode)
+        {
+            logger.LogError("BookStack API error for {Type}/{Id}: {Status} - {Body}", 
+                type, id, res.StatusCode, body);
+            return null;
+        }
+        
         try
         {
             using var doc = JsonDocument.Parse(body);
@@ -77,7 +89,8 @@ internal sealed class BookStackClient(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to parse entity HTML for Type={Type} Id={Id}", type, id);
+            logger.LogError(ex, "Failed to parse entity HTML for Type={Type} Id={Id}. Response body: {Body}", 
+                type, id, body);
             return null;
         }
     }
