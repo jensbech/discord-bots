@@ -18,9 +18,10 @@ public static class Program
     {
         var builder = WebApplication.CreateBuilder();
 
+        var port = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORT") ?? "9999";
         builder.WebHost.ConfigureKestrel(options =>
         {
-            options.ListenLocalhost(9999);
+            options.ListenAnyIP(int.Parse(port));
         });
 
         builder.Logging.AddConsole();
