@@ -19,22 +19,24 @@ public class NewPost
         try
         {
             var (url, author, title) = GetMessageContent(request);
+            
+            logger.LogInformation("New post detected: {Title} by {Author} at {Url}", title, author, url);
 
-            var embed = new EmbedBuilder()
-                .WithTitle(title)
-                .WithAuthor(author)
-                .WithDescription("A new post has appeared in the Wiki!")
-                .WithUrl(url)
-                .Build();
-
-            var guildId = ulong.Parse(options.Value.GuildId);
-            var channelId = ulong.Parse(options.Value.ChannelId);
-
-            var botClient = scribeBotBase.DiscordClient;
-            var guild = botClient.GetGuild(guildId);
-            var channel = guild.GetTextChannel(channelId);
-
-            await channel.SendMessageAsync(text: null, embed: embed);
+            // var embed = new EmbedBuilder()
+            //     .WithTitle(title)
+            //     .WithAuthor(author)
+            //     .WithDescription("A new post has appeared in the Wiki!")
+            //     .WithUrl(url)
+            //     .Build();
+            //
+            // var guildId = ulong.Parse(options.Value.GuildId);
+            // var channelId = ulong.Parse(options.Value.ChannelId);
+            //
+            // var botClient = scribeBotBase.DiscordClient;
+            // var guild = botClient.GetGuild(guildId);
+            // var channel = guild.GetTextChannel(channelId);
+            //
+            // await channel.SendMessageAsync(text: null, embed: embed);
             return Results.Ok();
         }
         catch (Exception ex)

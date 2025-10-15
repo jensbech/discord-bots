@@ -6,7 +6,7 @@ publish:
     ./scripts/build_and_publish.sh
 
 run:
-    cd DiscordBots.Scribe && dotnet run
+    cd DiscordBots.Scribe && dotnet run --urls=http://localhost:5001/
 
 host:
     docker compose up
