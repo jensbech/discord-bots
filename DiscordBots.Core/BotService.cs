@@ -18,11 +18,7 @@ public class BotService<TBot>(
         try
         {
             logger.LogInformation("Starting bot service...");
-            var bot = ActivatorUtilities.CreateInstance<TBot>(
-                serviceProvider,
-                commands,
-                botLogger
-            );
+            var bot = serviceProvider.GetRequiredService<TBot>();
             await bot.InitializeAsync();
             logger.LogInformation("Bot service started successfully");
             _ = Task.Delay(Timeout.Infinite, stoppingToken);

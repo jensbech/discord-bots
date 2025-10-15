@@ -44,6 +44,7 @@ public static class Program
         });
 
         builder.Services.AddSingleton(CommandBuilders.Commands);
+        builder.Services.AddSingleton<ScribeBotBase>();
         builder.Services.AddHostedService<BotService<ScribeBotBase>>();
 
         var app = builder.Build();
