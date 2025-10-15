@@ -34,12 +34,10 @@ public class NewPost
 
             if (string.Equals(webhookData.EventType, "page_create", StringComparison.OrdinalIgnoreCase))
             {
-                // For new pages, don't block on content fetch. Use revision summary if available.
-                summary = !string.IsNullOrWhiteSpace(webhookData.RevisionSummary)
-                    ? webhookData.RevisionSummary
-                    : $"New page '{webhookData.Title}' has been created.";
+                // For new pages, generate two-sentence AI summary using inline html content when available.
+                summary = await GenerateCreateSummary(openAiClient, webhookData.Title, webhookData.HtmlContent, webhookData.RevisionSummary, logger);
 
-                logger.LogInformation("Using revision summary for page create: {Summary}", summary);
+                logger.LogInformation("Generated AI summary for page create: {Summary}", summary);
             }
             else
             {
@@ -63,7 +61,6 @@ public class NewPost
                 }
             }
 
-            // Create embed
             var footerText = webhookData.EventType == "page_create"
                 ? "Page created"
                 : $"Page updated • Revision #{webhookData.RevisionNumber}";
@@ -78,8 +75,7 @@ public class NewPost
                 .WithFooter(footerText)
                 .Build();
 
-            // Send to Discord channel
-            const ulong channelId = 1426887048161132564; // TODO: Replace with actual channel ID
+            const ulong channelId = 1426887048161132564;
 
             var botClient = scribeBotBase.DiscordClient;
             if (botClient.GetChannel(channelId) is ITextChannel channel)
@@ -123,6 +119,13 @@ public class NewPost
             ?? throw new InvalidOperationException("related_item.slug is null");
 
         var pageId = root.GetProperty("related_item").GetProperty("id").GetInt32();
+        // Attempt to read raw HTML/content from the webhook for create events
+        string? htmlContent = null;
+        if (root.GetProperty("related_item").TryGetProperty("html", out var htmlElement) &&
+            htmlElement.ValueKind == JsonValueKind.String)
+        {
+            htmlContent = htmlElement.GetString();
+        }
 
         var updatedAtString = root.GetProperty("related_item").GetProperty("updated_at").GetString()
             ?? throw new InvalidOperationException("related_item.updated_at is null");
@@ -145,7 +148,7 @@ public class NewPost
             }
         }
 
-        return new WebhookData(url, author, title, slug, pageId, updatedAt, revisionNumber, eventType, revisionSummary);
+        return new WebhookData(url, author, title, slug, pageId, updatedAt, revisionNumber, eventType, revisionSummary, htmlContent);
     }
 
     private static async Task<string?> FetchPageContentWithFallbacks(
@@ -282,7 +285,64 @@ public class NewPost
             return $"Page '{title}' has been updated.";
         }
     }
-
+ 
+    private static async Task<string> GenerateCreateSummary(
+        IOpenAiClient openAiClient,
+        string title,
+        string? htmlContent,
+        string? revisionSummary,
+        ILogger logger)
+    {
+        // Prefer a non-trivial revision summary if provided
+        if (!string.IsNullOrWhiteSpace(revisionSummary) && revisionSummary!.Trim().Length > 15)
+        {
+            return revisionSummary!;
+        }
+ 
+        try
+        {
+            // Fallback if we have no HTML content at all
+            var contentForModel = htmlContent;
+            if (string.IsNullOrWhiteSpace(contentForModel))
+            {
+                return $"New page '{title}' has been created.";
+            }
+ 
+            const int maxContentLength = 3000;
+            if (contentForModel!.Length > maxContentLength)
+            {
+                contentForModel = contentForModel.Substring(0, maxContentLength) + "...";
+            }
+ 
+            var prompt =
+                $"You are a concise documentation assistant. Based on the HTML content of a newly created knowledge base page, " +
+                $"produce exactly two sentences: (1) a clear descriptive title (you may refine the original) and (2) a succinct summary of the page's purpose or key points. " +
+                $"Do not use markdown, quotes, or bullet points. Keep total length under 250 characters.\n\n" +
+                $"Original Title: {title}\n\nHTML Content:\n{contentForModel}";
+ 
+            var aiResponse = await openAiClient.AskChat(prompt, new List<string> { contentForModel });
+ 
+            if (string.IsNullOrWhiteSpace(aiResponse))
+            {
+                return $"New page '{title}' has been created.";
+            }
+ 
+            // Sanitize formatting and length
+            aiResponse = aiResponse.Replace("\n", " ").Replace("\r", " ").Trim();
+            if (aiResponse.Length > 250)
+            {
+                aiResponse = aiResponse.Substring(0, 247) + "...";
+            }
+ 
+            return aiResponse;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to generate AI create summary for page {Title}", title);
+            return $"New page '{title}' has been created.";
+        }
+    }
+ 
     private record WebhookData(
         string Url,
         string Author,
@@ -292,6 +352,7 @@ public class NewPost
         DateTime UpdatedAt,
         int RevisionNumber,
         string EventType,
-        string? RevisionSummary
+        string? RevisionSummary,
+        string? HtmlContent
     );
 }
