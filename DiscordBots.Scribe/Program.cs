@@ -1,17 +1,11 @@
 using DiscordBots.BookStack;
-using DiscordBots.BookStack.Interfaces;
 using DiscordBots.Core;
 using DiscordBots.OpenAI;
-using DiscordBots.OpenAI.Interfaces;
 using DiscordBots.Scribe.Commands;
-using DiscordBots.Scribe.Webhooks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Mvc;
 
 namespace DiscordBots.Scribe;
 
@@ -48,18 +42,6 @@ public static class Program
         builder.Services.AddHostedService<BotService<ScribeBotBase>>();
 
         var app = builder.Build();
-
-        app.MapPost(
-            "/webhooks/new",
-            async (
-                HttpContext context,
-                [FromServices] ScribeBotBase @base,
-                [FromServices] ILogger<NewPost> logger,
-                [FromServices] IOptions<BookStackOptions> bookstackOptions,
-                [FromServices] IBookStackClient bookStackClient,
-                [FromServices] IOpenAiClient openAiClient
-            ) => await NewPost.SendAsync(context.Request, @base, logger, bookstackOptions, bookStackClient, openAiClient)
-        );
 
         await app.RunAsync();
     }
