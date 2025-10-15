@@ -27,7 +27,8 @@ public class NewPost
             logger.LogInformation("New post detected: {Title} by {Author} at {Url}",
                 webhookData.Title, webhookData.Author, webhookData.Url);
 
-            var pageContent = await bookStackClient.GetEntityHtmlAsync("page", webhookData.PageId);
+            // For newly created pages, add retry logic with delay to handle timing issues
+            var pageContent = await FetchPageContentWithRetry(bookStackClient, webhookData.PageId, webhookData.EventType, logger);
             if (string.IsNullOrWhiteSpace(pageContent))
             {
                 logger.LogWarning("Could not fetch content for page {PageId}", webhookData.PageId);
@@ -112,6 +113,46 @@ public class NewPost
         }
 
         return new WebhookData(url, author, title, pageId, updatedAt, revisionNumber, eventType);
+    }
+
+    private static async Task<string?> FetchPageContentWithRetry(
+        IBookStackClient bookStackClient, 
+        int pageId, 
+        string eventType, 
+        ILogger logger)
+    {
+        var maxRetries = eventType == "page_create" ? 3 : 1;
+        var delayMs = 1000; // Start with 1 second delay
+        
+        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                var content = await bookStackClient.GetEntityHtmlAsync("page", pageId);
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    if (attempt > 1)
+                    {
+                        logger.LogInformation("Successfully fetched page {PageId} on attempt {Attempt}", pageId, attempt);
+                    }
+                    return content;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Attempt {Attempt} failed to fetch page {PageId}", attempt, pageId);
+            }
+            
+            if (attempt < maxRetries)
+            {
+                logger.LogInformation("Page {PageId} not ready yet, waiting {DelayMs}ms before retry {Attempt}/{MaxRetries}", 
+                    pageId, delayMs, attempt + 1, maxRetries);
+                await Task.Delay(delayMs);
+                delayMs *= 2; // Exponential backoff
+            }
+        }
+        
+        return null;
     }
 
     private static async Task<string> GenerateSummary(
