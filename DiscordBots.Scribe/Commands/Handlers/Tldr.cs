@@ -156,7 +156,7 @@ internal sealed class Tldr(IOpenAiClient openAi) : ISlashCommandHandler
 
     private static IEnumerable<string> SplitMessage(string text)
     {
-        const int maxLength = 1900; // Leave some room for Discord's limits
+        const int maxLength = 1900; 
         
         if (text.Length <= maxLength)
         {
@@ -177,7 +177,6 @@ internal sealed class Tldr(IOpenAiClient openAi) : ISlashCommandHandler
             
             if (line.Length > maxLength)
             {
-                // Split very long lines
                 for (var i = 0; i < line.Length; i += maxLength)
                 {
                     yield return line.Substring(i, Math.Min(maxLength, line.Length - i));
