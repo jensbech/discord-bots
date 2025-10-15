@@ -22,11 +22,8 @@ internal sealed class BookStackClient(
         int count = 100
     )
     {
-        var q = HttpUtility.ParseQueryString(string.Empty);
-        q["query"] = query;
-        q["page"] = page.ToString();
-        q["count"] = count.ToString();
-        using var req = new HttpRequestMessage(HttpMethod.Get, $"search?{q}");
+        var queryString = $"query={Uri.EscapeDataString(query)}&page={page}&count={count}";
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"search?{queryString}");
         req.Headers.Authorization = new AuthenticationHeaderValue(
             "Token",
             $"{_options.ApiId}:{_options.ApiKey}"
