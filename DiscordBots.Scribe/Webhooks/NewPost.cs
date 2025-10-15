@@ -32,35 +32,38 @@ public class NewPost
 
             string summary;
 
-            if (string.Equals(webhookData.EventType, "page_create", StringComparison.OrdinalIgnoreCase))
-            {
-                // For new pages, don't block on content fetch. Use revision summary if available.
-                summary = !string.IsNullOrWhiteSpace(webhookData.RevisionSummary)
-                    ? webhookData.RevisionSummary
-                    : $"New page '{webhookData.Title}' has been created.";
+            // Try to fetch content for both create and update events
+            var pageContent = await FetchPageContentWithFallbacks(
+                bookStackClient, 
+                webhookData.Url, 
+                webhookData.Title, 
+                webhookData.Slug, 
+                webhookData.PageId, 
+                logger);
 
-                logger.LogInformation("Using revision summary for page create: {Summary}", summary);
-            }
-            else
+            if (string.IsNullOrWhiteSpace(pageContent))
             {
-                // For updates, try to fetch content with fallbacks
-                var pageContent = await FetchPageContentWithFallbacks(
-                    bookStackClient,
-                    webhookData.Url,
-                    webhookData.Title,
-                    webhookData.Slug,
-                    webhookData.PageId,
-                    logger);
-
-                if (string.IsNullOrWhiteSpace(pageContent))
+                // Fallback based on event type
+                if (string.Equals(webhookData.EventType, "page_create", StringComparison.OrdinalIgnoreCase))
                 {
-                    logger.LogWarning("Could not fetch content for page {PageId}, using title-only summary", webhookData.PageId);
-                    summary = $"Page '{webhookData.Title}' has been updated.";
+                    summary = !string.IsNullOrWhiteSpace(webhookData.RevisionSummary)
+                        ? webhookData.RevisionSummary
+                        : $"New page '{webhookData.Title}' has been created.";
+                    
+                    logger.LogWarning("Could not fetch content for new page {PageId}, using revision summary: {Summary}", 
+                        webhookData.PageId, summary);
                 }
                 else
                 {
-                    summary = await GenerateSummary(openAiClient, webhookData.Title, pageContent, logger);
+                    summary = $"Page '{webhookData.Title}' has been updated.";
+                    logger.LogWarning("Could not fetch content for page update {PageId}, using title-only summary", webhookData.PageId);
                 }
+            }
+            else
+            {
+                // Generate AI summary from content (for both create and update)
+                summary = await GenerateSummary(openAiClient, webhookData.Title, pageContent, logger);
+                logger.LogInformation("Generated AI summary for page {PageId}: {Summary}", webhookData.PageId, summary);
             }
 
             // Create embed
@@ -264,7 +267,7 @@ public class NewPost
                 ? content.Substring(0, maxContentLength) + "..."
                 : content;
 
-            var prompt = $"Create a single sentence summary of this page. " +
+            var prompt = $"Create a concise two-sentence summary of this page content. " +
                         $"Title: {title}\n\nContent: {truncatedContent}";
 
             var summary = await openAiClient.AskChat(prompt, new List<string> { truncatedContent });
@@ -274,7 +277,7 @@ public class NewPost
                 return $"Page '{title}' has been updated.";
             }
 
-            return summary.Length > 200 ? summary.Substring(0, 197) + "..." : summary;
+            return summary.Length > 300 ? summary.Substring(0, 297) + "..." : summary;
         }
         catch (Exception ex)
         {
