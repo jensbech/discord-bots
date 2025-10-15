@@ -4,6 +4,7 @@ namespace DiscordBots.BookStack.Models
 {
     public sealed class BookStackSearchResponse
     {
+        [JsonPropertyName("total")]
         public int Total { get; init; }
 
         [JsonPropertyName("data")]

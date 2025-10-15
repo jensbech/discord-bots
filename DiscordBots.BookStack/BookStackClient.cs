@@ -33,13 +33,20 @@ internal sealed class BookStackClient(
         logger.LogInformation("BookStack search request URL: {Url}", res.RequestMessage?.RequestUri);
 
         var json = await res.Content.ReadAsStringAsync();
+
+        if (!res.IsSuccessStatusCode)
+        {
+            logger.LogError("BookStack search API error: Status={Status} Body={Body}", res.StatusCode, json);
+            return null;
+        }
+
         try
         {
             return JsonSerializer.Deserialize<BookStackSearchResponse>(json);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to deserialize BookStack search response");
+            logger.LogError(ex, "Failed to deserialize BookStack search response. Body: {Body}", json);
             return null;
         }
     }
