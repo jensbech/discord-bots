@@ -136,6 +136,26 @@ public class NewPost
 
                 // Use search API to find the page (we know this works from Ask command)
                 var searchResults = await bookStackClient.SearchAsync(pageTitle, 1, 10);
+                
+                // Log search results for debugging
+                if (searchResults != null)
+                {
+                    logger.LogInformation("Search returned {Total} total results, {DataCount} data items", 
+                        searchResults.Total, searchResults.Data?.Count ?? 0);
+                    
+                    if (searchResults.Data != null && searchResults.Data.Any())
+                    {
+                        foreach (var result in searchResults.Data.Take(5)) // Log first 5 results
+                        {
+                            logger.LogInformation("Search result: Name='{Name}', Type='{Type}', Id={Id}", 
+                                result.Name, result.Type, result.Id);
+                        }
+                    }
+                }
+                else
+                {
+                    logger.LogWarning("SearchAsync returned null");
+                }
                 if (searchResults?.Data == null || !searchResults.Data.Any())
                 {
                     if (attempt < maxRetries)
