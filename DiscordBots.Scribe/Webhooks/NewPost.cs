@@ -34,9 +34,29 @@ public class NewPost
 
             if (string.Equals(webhookData.EventType, "page_create", StringComparison.OrdinalIgnoreCase))
             {
-                // For new pages, generate two-sentence AI summary using inline html content when available.
-                summary = await GenerateCreateSummary(openAiClient, webhookData.Title, webhookData.HtmlContent, webhookData.RevisionSummary, logger);
+                // Attempt to use provided HTML; if missing, fetch content using existing fallback logic (search then direct).
+                string? createContent = webhookData.HtmlContent;
+                if (string.IsNullOrWhiteSpace(createContent))
+                {
+                    var fetchedContent = await FetchPageContentWithFallbacks(
+                        bookStackClient,
+                        webhookData.Url,
+                        webhookData.Title,
+                        webhookData.Slug,
+                        webhookData.PageId,
+                        logger);
+                    if (!string.IsNullOrWhiteSpace(fetchedContent))
+                    {
+                        createContent = fetchedContent;
+                        logger.LogInformation("Fetched content for create event (length {Length})", createContent.Length);
+                    }
+                    else
+                    {
+                        logger.LogWarning("No content available for create event; using revision summary or title.");
+                    }
+                }
 
+                summary = await GenerateCreateSummary(openAiClient, webhookData.Title, createContent, webhookData.RevisionSummary, logger);
                 logger.LogInformation("Generated AI summary for page create: {Summary}", summary);
             }
             else
@@ -317,10 +337,9 @@ public class NewPost
             }
  
             var prompt =
-                $"You are a concise documentation assistant. Based on the provided new page content, " +
-                $"produce exactly two sentences: (1) a refined descriptive title (may improve the original) and (2) a succinct summary of the page's purpose or key points. " +
-                $"Do not use markdown, quotes, or bullet points. Keep total length under 250 characters.\n\n" +
-                $"Original Title: {title}\n\nContent:\n{contentForModel}";
+                $"You are a concise documentation assistant. Read the new knowledge base page content and produce exactly two sentences summarizing its key idea and supporting details. " +
+                $"Do not repeat the page title, do not use markdown, quotes, or bullet points. Keep total length under 250 characters.\n\n" +
+                $"Title: {title}\n\nContent:\n{contentForModel}";
  
             var aiResponse = await openAiClient.AskChat(prompt, new List<string> { contentForModel });
  
