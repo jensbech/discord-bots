@@ -38,18 +38,18 @@ public class NewPost
                 summary = !string.IsNullOrWhiteSpace(webhookData.RevisionSummary)
                     ? webhookData.RevisionSummary
                     : $"New page '{webhookData.Title}' has been created.";
-                
+
                 logger.LogInformation("Using revision summary for page create: {Summary}", summary);
             }
             else
             {
                 // For updates, try to fetch content with fallbacks
                 var pageContent = await FetchPageContentWithFallbacks(
-                    bookStackClient, 
-                    webhookData.Url, 
-                    webhookData.Title, 
-                    webhookData.Slug, 
-                    webhookData.PageId, 
+                    bookStackClient,
+                    webhookData.Url,
+                    webhookData.Title,
+                    webhookData.Slug,
+                    webhookData.PageId,
                     logger);
 
                 if (string.IsNullOrWhiteSpace(pageContent))
@@ -79,7 +79,7 @@ public class NewPost
                 .Build();
 
             // Send to Discord channel
-            const ulong channelId = 123456789012345678; // TODO: Replace with actual channel ID
+            const ulong channelId = 1426887048161132564; // TODO: Replace with actual channel ID
 
             var botClient = scribeBotBase.DiscordClient;
             if (botClient.GetChannel(channelId) is ITextChannel channel)
@@ -131,14 +131,14 @@ public class NewPost
 
         var revisionNumber = 1;
         string? revisionSummary = null;
-        
+
         if (root.GetProperty("related_item").TryGetProperty("current_revision", out var currentRevision))
         {
             if (currentRevision.TryGetProperty("revision_number", out var revisionNumberElement))
             {
                 revisionNumber = revisionNumberElement.GetInt32();
             }
-            if (currentRevision.TryGetProperty("summary", out var summaryElement) && 
+            if (currentRevision.TryGetProperty("summary", out var summaryElement) &&
                 summaryElement.ValueKind == JsonValueKind.String)
             {
                 revisionSummary = summaryElement.GetString();
@@ -185,14 +185,14 @@ public class NewPost
         try
         {
             var searchResults = await bookStackClient.SearchAsync(pageTitle, 1, 10);
-            
+
             if (searchResults?.Data == null || !searchResults.Data.Any())
             {
                 logger.LogWarning("No search results found for page title: {Title}", pageTitle);
                 return null;
             }
 
-            logger.LogInformation("Search returned {Total} total results, {DataCount} data items", 
+            logger.LogInformation("Search returned {Total} total results, {DataCount} data items",
                 searchResults.Total, searchResults.Data.Count);
 
             // Find match by URL, slug, or title
@@ -240,7 +240,7 @@ public class NewPost
                 logger.LogInformation("Successfully fetched page {PageId} via direct API", pageId);
                 return content;
             }
-            
+
             logger.LogWarning("Direct API returned empty content for page {PageId}", pageId);
             return null;
         }
