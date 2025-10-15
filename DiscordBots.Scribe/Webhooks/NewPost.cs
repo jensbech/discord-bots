@@ -27,7 +27,7 @@ public class NewPost
             logger.LogInformation("New post detected: {Title} by {Author} at {Url}",
                 webhookData.Title, webhookData.Author, webhookData.Url);
 
-            var pageContent = await bookStackClient.GetEntityHtmlAsync("pages", webhookData.PageId);
+            var pageContent = await bookStackClient.GetEntityHtmlAsync("page", webhookData.PageId);
             if (string.IsNullOrWhiteSpace(pageContent))
             {
                 logger.LogWarning("Could not fetch content for page {PageId}", webhookData.PageId);
@@ -37,9 +37,13 @@ public class NewPost
             // Generate AI summary
             var summary = await GenerateSummary(openAiClient, webhookData.Title, pageContent, logger);
             
-            logger.Log(LogLevel.Critical, summary);
+
 
             // Create embed
+            var footerText = webhookData.EventType == "page_create" 
+                ? "Page created" 
+                : $"Page updated • Revision #{webhookData.RevisionNumber}";
+            
             var embed = new EmbedBuilder()
                 .WithTitle(webhookData.Title)
                 .WithAuthor(webhookData.Author)
@@ -47,7 +51,7 @@ public class NewPost
                 .WithUrl(webhookData.Url)
                 .WithColor(Color.Blue)
                 .WithTimestamp(webhookData.UpdatedAt)
-                .WithFooter($"Page updated • Revision #{webhookData.RevisionNumber}")
+                .WithFooter(footerText)
                 .Build();
 
             // Send to Discord channel
@@ -79,6 +83,9 @@ public class NewPost
         var body = await JsonDocument.ParseAsync(request.Body);
         var root = body.RootElement;
 
+        var eventType = root.GetProperty("event").GetString()
+            ?? throw new InvalidOperationException("event is null");
+
         var url = root.GetProperty("url").GetString()
             ?? throw new InvalidOperationException("url is null");
 
@@ -104,7 +111,7 @@ public class NewPost
             }
         }
 
-        return new WebhookData(url, author, title, pageId, updatedAt, revisionNumber);
+        return new WebhookData(url, author, title, pageId, updatedAt, revisionNumber, eventType);
     }
 
     private static async Task<string> GenerateSummary(
@@ -120,7 +127,7 @@ public class NewPost
                 ? content.Substring(0, maxContentLength) + "..."
                 : content;
 
-            var prompt = $"Create a single sentence summary of this page update. " +
+            var prompt = $"Create a single sentence summary of this page. " +
                         $"Title: {title}\n\nContent: {truncatedContent}";
 
             var summary = await openAiClient.AskChat(prompt, new List<string> { truncatedContent });
@@ -145,6 +152,7 @@ public class NewPost
         string Title,
         int PageId,
         DateTime UpdatedAt,
-        int RevisionNumber
+        int RevisionNumber,
+        string EventType
     );
 }
