@@ -30,8 +30,8 @@ public class NewPost
             logger.LogInformation("Webhook data: PageId={PageId}, EventType={EventType}",
                 webhookData.PageId, webhookData.EventType);
 
-            // Use search API to find the page (same approach as Ask command)
-            var pageContent = await FetchPageContentViaSearchWithRetry(bookStackClient, webhookData.Title, webhookData.EventType, logger);
+            // Use search API to find the page by slug/url (more reliable than title)
+            var pageContent = await FetchPageContentViaSearchWithRetry(bookStackClient, webhookData.Url, webhookData.Title, webhookData.Slug, webhookData.EventType, logger);
             if (string.IsNullOrWhiteSpace(pageContent))
             {
                 logger.LogWarning("Could not fetch content for page {PageId}", webhookData.PageId);
@@ -99,6 +99,9 @@ public class NewPost
         var title = root.GetProperty("related_item").GetProperty("name").GetString()
             ?? throw new InvalidOperationException("related_item.name is null");
 
+        var slug = root.GetProperty("related_item").GetProperty("slug").GetString()
+            ?? throw new InvalidOperationException("related_item.slug is null");
+
         var pageId = root.GetProperty("related_item").GetProperty("id").GetInt32();
 
         var updatedAtString = root.GetProperty("related_item").GetProperty("updated_at").GetString()
@@ -115,12 +118,14 @@ public class NewPost
             }
         }
 
-        return new WebhookData(url, author, title, pageId, updatedAt, revisionNumber, eventType);
+        return new WebhookData(url, author, title, slug, pageId, updatedAt, revisionNumber, eventType);
     }
 
     private static async Task<string?> FetchPageContentViaSearchWithRetry(
         IBookStackClient bookStackClient,
+        string pageUrl,
         string pageTitle,
+        string pageSlug,
         string eventType,
         ILogger logger)
     {
@@ -131,8 +136,8 @@ public class NewPost
         {
             try
             {
-                logger.LogInformation("Searching for page with title: {Title} (attempt {Attempt}/{MaxRetries})", 
-                    pageTitle, attempt, maxRetries);
+                logger.LogInformation("Searching for page by slug/url. Title={Title}, Slug={Slug}, Url={Url} (attempt {Attempt}/{MaxRetries})",
+                    pageTitle, pageSlug, pageUrl, attempt, maxRetries);
 
                 // Use search API to find the page (we know this works from Ask command)
                 var searchResults = await bookStackClient.SearchAsync(pageTitle, 1, 10);
@@ -172,24 +177,26 @@ public class NewPost
                     return null;
                 }
 
-                // Find exact title match
-                var exactMatch = searchResults.Data.FirstOrDefault(r => 
-                    r.Name.Equals(pageTitle, StringComparison.OrdinalIgnoreCase) && 
-                    r.Type.Equals("page", StringComparison.OrdinalIgnoreCase));
+                // Prefer URL/slug match, fall back to title
+                var exactMatch = searchResults.Data.FirstOrDefault(r =>
+                    r.Type.Equals("page", StringComparison.OrdinalIgnoreCase) &&
+                    (string.Equals(r.Url, pageUrl, StringComparison.OrdinalIgnoreCase)
+                     || (!string.IsNullOrWhiteSpace(pageSlug) && r.Url.EndsWith($"/page/{pageSlug}", StringComparison.OrdinalIgnoreCase))
+                     || r.Name.Equals(pageTitle, StringComparison.OrdinalIgnoreCase)));
 
                 if (exactMatch == null)
                 {
                     if (attempt < maxRetries)
                     {
-                        logger.LogInformation("No exact page match found for title: {Title}, waiting {DelayMs}ms before retry", 
-                            pageTitle, delayMs);
+                        logger.LogInformation("No exact page match found for slug/url (Title={Title}, Slug={Slug}), waiting {DelayMs}ms before retry", 
+                            pageTitle, pageSlug, delayMs);
                         await Task.Delay(delayMs);
                         delayMs *= 2;
                         continue;
                     }
                     
-                    logger.LogWarning("No exact page match found for title: {Title} after {MaxRetries} attempts", 
-                        pageTitle, maxRetries);
+                    logger.LogWarning("No exact page match found for slug/url after {MaxRetries} attempts (Title={Title}, Slug={Slug})", 
+                        maxRetries, pageTitle, pageSlug);
                     return null;
                 }
 
@@ -272,6 +279,7 @@ public class NewPost
         string Url,
         string Author,
         string Title,
+        string Slug,
         int PageId,
         DateTime UpdatedAt,
         int RevisionNumber,

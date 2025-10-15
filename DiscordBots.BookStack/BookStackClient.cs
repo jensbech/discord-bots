@@ -30,6 +30,7 @@ internal sealed class BookStackClient(
         );
 
         using var res = await http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+        logger.LogInformation("BookStack search request URL: {Url}", res.RequestMessage?.RequestUri);
 
         var json = await res.Content.ReadAsStringAsync();
         try
