@@ -128,13 +128,11 @@ internal sealed class Tldr(IOpenAiClient openAi) : ISlashCommandHandler
         var author = message.Author.GlobalName ?? message.Author.Username;
         var content = message.Content;
         
-        // Handle message references (replies)
         if (message.Reference?.MessageId.IsSpecified == true)
         {
             content = $"[Reply] {content}";
         }
         
-        // Include attachment info
         if (message.Attachments.Any())
         {
             var attachmentInfo = $" [Attachments: {string.Join(", ", message.Attachments.Select(a => a.Filename))}]";
