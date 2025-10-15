@@ -4,6 +4,7 @@ using DiscordBots.OpenAI;
 using DiscordBots.Scribe.Commands;
 using DiscordBots.Scribe.Webhooks;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,9 @@ public static class Program
     {
         var builder = WebApplication.CreateBuilder();
 
+        // remove for deploy?
+        builder.WebHost.UseUrls();
+
         builder.Logging.AddConsole();
         builder.Logging.SetMinimumLevel(
             Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"
@@ -26,13 +30,13 @@ public static class Program
 
         BookStackService.AddService(builder.Services, builder.Configuration);
         OpenAiService.AddService(builder.Services, builder.Configuration);
-        
+
         builder.Services.Configure<ScribeBotOptions>(options =>
         {
             options.BotName = "Scribe Bot";
             options.Token = Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN") ?? string.Empty;
         });
-        
+
         builder.Services.AddSingleton(CommandBuilders.Commands);
         builder.Services.AddHostedService<BotService<ScribeBotBase>>();
 
