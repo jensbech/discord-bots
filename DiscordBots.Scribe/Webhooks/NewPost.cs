@@ -121,10 +121,18 @@ public class NewPost
         var pageId = root.GetProperty("related_item").GetProperty("id").GetInt32();
         // Attempt to read raw HTML/content from the webhook for create events
         string? htmlContent = null;
-        if (root.GetProperty("related_item").TryGetProperty("html", out var htmlElement) &&
-            htmlElement.ValueKind == JsonValueKind.String)
+        var relatedItem = root.GetProperty("related_item");
+        if (relatedItem.TryGetProperty("html", out var htmlElement) && htmlElement.ValueKind == JsonValueKind.String)
         {
             htmlContent = htmlElement.GetString();
+        }
+        else if (relatedItem.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.String)
+        {
+            htmlContent = contentElement.GetString();
+        }
+        else if (relatedItem.TryGetProperty("text", out var textElement) && textElement.ValueKind == JsonValueKind.String)
+        {
+            htmlContent = textElement.GetString();
         }
 
         var updatedAtString = root.GetProperty("related_item").GetProperty("updated_at").GetString()
@@ -293,32 +301,26 @@ public class NewPost
         string? revisionSummary,
         ILogger logger)
     {
-        // Prefer a non-trivial revision summary if provided
-        if (!string.IsNullOrWhiteSpace(revisionSummary) && revisionSummary!.Trim().Length > 15)
-        {
-            return revisionSummary!;
-        }
- 
         try
         {
-            // Fallback if we have no HTML content at all
-            var contentForModel = htmlContent;
-            if (string.IsNullOrWhiteSpace(contentForModel))
-            {
-                return $"New page '{title}' has been created.";
-            }
+            // Choose best available content: html > revision summary > title
+            var contentForModel = !string.IsNullOrWhiteSpace(htmlContent)
+                ? htmlContent
+                : !string.IsNullOrWhiteSpace(revisionSummary)
+                    ? revisionSummary
+                    : title;
  
             const int maxContentLength = 3000;
-            if (contentForModel!.Length > maxContentLength)
+            if (contentForModel.Length > maxContentLength)
             {
                 contentForModel = contentForModel.Substring(0, maxContentLength) + "...";
             }
  
             var prompt =
-                $"You are a concise documentation assistant. Based on the HTML content of a newly created knowledge base page, " +
-                $"produce exactly two sentences: (1) a clear descriptive title (you may refine the original) and (2) a succinct summary of the page's purpose or key points. " +
+                $"You are a concise documentation assistant. Based on the provided new page content, " +
+                $"produce exactly two sentences: (1) a refined descriptive title (may improve the original) and (2) a succinct summary of the page's purpose or key points. " +
                 $"Do not use markdown, quotes, or bullet points. Keep total length under 250 characters.\n\n" +
-                $"Original Title: {title}\n\nHTML Content:\n{contentForModel}";
+                $"Original Title: {title}\n\nContent:\n{contentForModel}";
  
             var aiResponse = await openAiClient.AskChat(prompt, new List<string> { contentForModel });
  
