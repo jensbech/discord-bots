@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Discord;
 using DiscordBots.BookStack;
+using DiscordBots.BookStack.Interfaces;
+using DiscordBots.OpenAI.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,30 +15,56 @@ public class NewPost
         HttpRequest request,
         ScribeBotBase scribeBotBase,
         ILogger<NewPost> logger,
-        IOptions<BookStackOptions> options
+        IOptions<BookStackOptions> bookStackOptions,
+        IBookStackClient bookStackClient,
+        IOpenAiClient openAiClient
     )
     {
         try
         {
-            var (url, author, title) = GetMessageContent(request);
-            
-            logger.LogInformation("New post detected: {Title} by {Author} at {Url}", title, author, url);
+            var webhookData = await ParseWebhookData(request);
 
-            // var embed = new EmbedBuilder()
-            //     .WithTitle(title)
-            //     .WithAuthor(author)
-            //     .WithDescription("A new post has appeared in the Wiki!")
-            //     .WithUrl(url)
-            //     .Build();
-            //
-            // var guildId = ulong.Parse(options.Value.GuildId);
-            // var channelId = ulong.Parse(options.Value.ChannelId);
-            //
-            // var botClient = scribeBotBase.DiscordClient;
-            // var guild = botClient.GetGuild(guildId);
-            // var channel = guild.GetTextChannel(channelId);
-            //
-            // await channel.SendMessageAsync(text: null, embed: embed);
+            logger.LogInformation("New post detected: {Title} by {Author} at {Url}",
+                webhookData.Title, webhookData.Author, webhookData.Url);
+
+            var pageContent = await bookStackClient.GetEntityHtmlAsync("pages", webhookData.PageId);
+            if (string.IsNullOrWhiteSpace(pageContent))
+            {
+                logger.LogWarning("Could not fetch content for page {PageId}", webhookData.PageId);
+                pageContent = "Content could not be retrieved.";
+            }
+
+            // Generate AI summary
+            var summary = await GenerateSummary(openAiClient, webhookData.Title, pageContent, logger);
+            
+            logger.Log(LogLevel.Critical, summary);
+
+            // Create embed
+            var embed = new EmbedBuilder()
+                .WithTitle(webhookData.Title)
+                .WithAuthor(webhookData.Author)
+                .WithDescription(summary)
+                .WithUrl(webhookData.Url)
+                .WithColor(Color.Blue)
+                .WithTimestamp(webhookData.UpdatedAt)
+                .WithFooter($"Page updated • Revision #{webhookData.RevisionNumber}")
+                .Build();
+
+            // Send to Discord channel
+            const ulong channelId = 123456789012345678; // TODO: Replace with actual channel ID
+
+            var botClient = scribeBotBase.DiscordClient;
+            if (botClient.GetChannel(channelId) is ITextChannel channel)
+            {
+                await channel.SendMessageAsync(embed: embed);
+                logger.LogInformation("Successfully sent webhook notification to channel {ChannelId}", channelId);
+            }
+            else
+            {
+                logger.LogError("Could not find or access channel {ChannelId}", channelId);
+                return Results.StatusCode(500);
+            }
+
             return Results.Ok();
         }
         catch (Exception ex)
@@ -46,24 +74,77 @@ public class NewPost
         }
     }
 
-    private static (string url, string author, string title) GetMessageContent(HttpRequest request)
+    private static async Task<WebhookData> ParseWebhookData(HttpRequest request)
     {
-        var body = JsonDocument.Parse(request.Body);
+        var body = await JsonDocument.ParseAsync(request.Body);
         var root = body.RootElement;
 
-        var url =
-            root.GetProperty("url").GetString() ?? throw new InvalidOperationException(
-                "url is null"
-            );
+        var url = root.GetProperty("url").GetString()
+            ?? throw new InvalidOperationException("url is null");
 
-        var author =
-            root.GetProperty("triggered_by").GetProperty("name").GetString()
+        var author = root.GetProperty("triggered_by").GetProperty("name").GetString()
             ?? throw new InvalidOperationException("triggered_by.name is null");
 
-        var title =
-            root.GetProperty("current_revision").GetProperty("name").GetString()
-            ?? throw new InvalidOperationException("current_revision.name is null");
+        var title = root.GetProperty("related_item").GetProperty("name").GetString()
+            ?? throw new InvalidOperationException("related_item.name is null");
 
-        return (url, author, title);
+        var pageId = root.GetProperty("related_item").GetProperty("id").GetInt32();
+
+        var updatedAtString = root.GetProperty("related_item").GetProperty("updated_at").GetString()
+            ?? throw new InvalidOperationException("related_item.updated_at is null");
+
+        var updatedAt = DateTime.Parse(updatedAtString);
+
+        var revisionNumber = 1;
+        if (root.GetProperty("related_item").TryGetProperty("current_revision", out var currentRevision))
+        {
+            if (currentRevision.TryGetProperty("revision_number", out var revisionNumberElement))
+            {
+                revisionNumber = revisionNumberElement.GetInt32();
+            }
+        }
+
+        return new WebhookData(url, author, title, pageId, updatedAt, revisionNumber);
     }
+
+    private static async Task<string> GenerateSummary(
+        IOpenAiClient openAiClient,
+        string title,
+        string content,
+        ILogger logger)
+    {
+        try
+        {
+            const int maxContentLength = 2000;
+            var truncatedContent = content.Length > maxContentLength
+                ? content.Substring(0, maxContentLength) + "..."
+                : content;
+
+            var prompt = $"Create a single sentence summary of this page update. " +
+                        $"Title: {title}\n\nContent: {truncatedContent}";
+
+            var summary = await openAiClient.AskChat(prompt, new List<string> { truncatedContent });
+
+            if (string.IsNullOrWhiteSpace(summary))
+            {
+                return $"Page '{title}' has been updated.";
+            }
+
+            return summary.Length > 200 ? summary.Substring(0, 197) + "..." : summary;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to generate AI summary for page {Title}", title);
+            return $"Page '{title}' has been updated.";
+        }
+    }
+
+    private record WebhookData(
+        string Url,
+        string Author,
+        string Title,
+        int PageId,
+        DateTime UpdatedAt,
+        int RevisionNumber
+    );
 }

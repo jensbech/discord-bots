@@ -1,6 +1,8 @@
 using DiscordBots.BookStack;
+using DiscordBots.BookStack.Interfaces;
 using DiscordBots.Core;
 using DiscordBots.OpenAI;
+using DiscordBots.OpenAI.Interfaces;
 using DiscordBots.Scribe.Commands;
 using DiscordBots.Scribe.Webhooks;
 using Microsoft.AspNetCore.Builder;
@@ -51,8 +53,10 @@ public static class Program
                 HttpRequest request,
                 ScribeBotBase @base,
                 ILogger<NewPost> logger,
-                IOptions<BookStackOptions> bookstackOptions
-            ) => await NewPost.SendAsync(request, @base, logger, bookstackOptions)
+                IOptions<BookStackOptions> bookstackOptions,
+                IBookStackClient bookStackClient,
+                IOpenAiClient openAiClient
+            ) => await NewPost.SendAsync(request, @base, logger, bookstackOptions, bookStackClient, openAiClient)
         );
 
         await app.RunAsync();
