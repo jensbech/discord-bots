@@ -18,8 +18,10 @@ public static class Program
     {
         var builder = WebApplication.CreateBuilder();
 
-        // remove for deploy?
-        builder.WebHost.UseUrls();
+        builder.WebHost.ConfigureKestrel(options =>
+        {
+            options.ListenLocalhost(5001);
+        });
 
         builder.Logging.AddConsole();
         builder.Logging.SetMinimumLevel(
