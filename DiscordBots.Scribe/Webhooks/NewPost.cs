@@ -26,6 +26,9 @@ public class NewPost
 
             logger.LogInformation("New post detected: {Title} by {Author} at {Url}",
                 webhookData.Title, webhookData.Author, webhookData.Url);
+            
+            logger.LogInformation("Webhook data: PageId={PageId}, EventType={EventType}", 
+                webhookData.PageId, webhookData.EventType);
 
             // For newly created pages, add retry logic with delay to handle timing issues
             var pageContent = await FetchPageContentWithRetry(bookStackClient, webhookData.PageId, webhookData.EventType, logger);
@@ -83,6 +86,15 @@ public class NewPost
     {
         var body = await JsonDocument.ParseAsync(request.Body);
         var root = body.RootElement;
+        
+        // Log the full webhook payload for debugging
+        using var ms = new MemoryStream();
+        using var writer = new Utf8JsonWriter(ms, new JsonWriterOptions { Indented = true });
+        root.WriteTo(writer);
+        writer.Flush();
+        var jsonString = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+        Console.WriteLine("Full webhook payload:");
+        Console.WriteLine(jsonString);
 
         var eventType = root.GetProperty("event").GetString()
             ?? throw new InvalidOperationException("event is null");
