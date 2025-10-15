@@ -22,6 +22,9 @@ internal sealed class Help : ISlashCommandHandler
         🤖 **/ask** `<question>`
         Ask any question answered from the Wiki contents
 
+        📝 **/tldr**
+        Summarize the conversation in this channel since your last message
+
         ❓ **/help**
         Display this help message
 
@@ -29,6 +32,7 @@ internal sealed class Help : ISlashCommandHandler
         • `/roll 2d6+4` - Roll two six-sided dice and add 4
         • `/rules "How does advantage work?"` - Ask about D&D 5E advantage mechanics
         • `/ask "Who is Timou Grolsch?"` - Ask about any content from the DnD wiki
+        • `/tldr` - Get a summary of recent channel activity
         """;
 
         await command.RespondAsync(helpMessage);

@@ -6,7 +6,7 @@ publish:
     ./scripts/build_and_publish.sh
 
 run:
-    cd DiscordBots.BoredBot && dotnet run
+    cd DiscordBots.Scribe && dotnet run
 
 host:
     docker compose up

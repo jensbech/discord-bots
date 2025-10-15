@@ -34,6 +34,9 @@ namespace DiscordBots.Scribe.Commands
                         isRequired: true
                     ),
                 new SlashCommandBuilder()
+                    .WithName("tldr")
+                    .WithDescription("Too long, did not read: Summarize the conversation in this channel since your last message"),
+                new SlashCommandBuilder()
                     .WithName("help")
                     .WithDescription("Displays a list of available commands."),
             ];

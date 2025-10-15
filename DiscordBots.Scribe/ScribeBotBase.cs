@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace DiscordBots.Scribe;
 
-public abstract class ScribeBotBase(
+public class ScribeBotBase(
     IOptions<ScribeBotOptions> options,
     SlashCommandBuilder[] commands,
     ILogger<ScribeBotBase> logger,
@@ -25,6 +25,7 @@ public abstract class ScribeBotBase(
             new Roll(),
             new Rules(openAiClient),
             new Ask(bookStackClient, openAiClient),
+            new Tldr(openAiClient),
             new Help(),
         }.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
 
