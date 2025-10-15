@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DiscordBots.Scribe;
 
@@ -50,13 +51,13 @@ public static class Program
         app.MapPost(
             "/webhooks/new",
             async (
-                HttpRequest request,
-                ScribeBotBase @base,
-                ILogger<NewPost> logger,
-                IOptions<BookStackOptions> bookstackOptions,
-                IBookStackClient bookStackClient,
-                IOpenAiClient openAiClient
-            ) => await NewPost.SendAsync(request, @base, logger, bookstackOptions, bookStackClient, openAiClient)
+                HttpContext context,
+                [FromServices] ScribeBotBase @base,
+                [FromServices] ILogger<NewPost> logger,
+                [FromServices] IOptions<BookStackOptions> bookstackOptions,
+                [FromServices] IBookStackClient bookStackClient,
+                [FromServices] IOpenAiClient openAiClient
+            ) => await NewPost.SendAsync(context.Request, @base, logger, bookstackOptions, bookStackClient, openAiClient)
         );
 
         await app.RunAsync();
