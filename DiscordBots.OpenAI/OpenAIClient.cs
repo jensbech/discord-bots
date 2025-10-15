@@ -29,6 +29,19 @@ internal sealed class OpenAiClient(
         return await EnsureChatAnswerString(res);
     }
 
+    public async Task<string?> SummarizeMessages(IReadOnlyList<string> messages)
+    {
+        if (messages.Count == 0)
+            return "No messages to summarize.";
+
+        var systemPrompt = MessageSummarizer.GetSystemPrompt();
+        var messageContent = string.Join("\n\n---\n\n", messages);
+        var question = $"Please summarize these Discord messages:\n\n{messageContent}";
+        
+        var res = await http.SendAsync(ConstructCompletionRequest(question, systemPrompt));
+        return await EnsureChatAnswerString(res);
+    }
+
     public async Task<string?> ReduceSearchQuery(string question)
     {
         var systemPrompt = QueryReducer.GetSystemPrompt();
