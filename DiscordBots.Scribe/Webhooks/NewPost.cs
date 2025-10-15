@@ -26,12 +26,12 @@ public class NewPost
 
             logger.LogInformation("New post detected: {Title} by {Author} at {Url}",
                 webhookData.Title, webhookData.Author, webhookData.Url);
-            
-            logger.LogInformation("Webhook data: PageId={PageId}, EventType={EventType}", 
+
+            logger.LogInformation("Webhook data: PageId={PageId}, EventType={EventType}",
                 webhookData.PageId, webhookData.EventType);
 
-            // For newly created pages, add retry logic with delay to handle timing issues
-            var pageContent = await FetchPageContentWithRetry(bookStackClient, webhookData.PageId, webhookData.EventType, logger);
+            // Use search API to find the page (same approach as Ask command)
+            var pageContent = await FetchPageContentViaSearch(bookStackClient, webhookData.Title, logger);
             if (string.IsNullOrWhiteSpace(pageContent))
             {
                 logger.LogWarning("Could not fetch content for page {PageId}", webhookData.PageId);
@@ -40,14 +40,14 @@ public class NewPost
 
             // Generate AI summary
             var summary = await GenerateSummary(openAiClient, webhookData.Title, pageContent, logger);
-            
+
 
 
             // Create embed
-            var footerText = webhookData.EventType == "page_create" 
-                ? "Page created" 
+            var footerText = webhookData.EventType == "page_create"
+                ? "Page created"
                 : $"Page updated • Revision #{webhookData.RevisionNumber}";
-            
+
             var embed = new EmbedBuilder()
                 .WithTitle(webhookData.Title)
                 .WithAuthor(webhookData.Author)
@@ -86,15 +86,6 @@ public class NewPost
     {
         var body = await JsonDocument.ParseAsync(request.Body);
         var root = body.RootElement;
-        
-        // Log the full webhook payload for debugging
-        using var ms = new MemoryStream();
-        using var writer = new Utf8JsonWriter(ms, new JsonWriterOptions { Indented = true });
-        root.WriteTo(writer);
-        writer.Flush();
-        var jsonString = System.Text.Encoding.UTF8.GetString(ms.ToArray());
-        Console.WriteLine("Full webhook payload:");
-        Console.WriteLine(jsonString);
 
         var eventType = root.GetProperty("event").GetString()
             ?? throw new InvalidOperationException("event is null");
@@ -127,44 +118,53 @@ public class NewPost
         return new WebhookData(url, author, title, pageId, updatedAt, revisionNumber, eventType);
     }
 
-    private static async Task<string?> FetchPageContentWithRetry(
+    private static async Task<string?> FetchPageContentViaSearch(
         IBookStackClient bookStackClient, 
-        int pageId, 
-        string eventType, 
+        string pageTitle, 
         ILogger logger)
     {
-        var maxRetries = eventType == "page_create" ? 3 : 1;
-        var delayMs = 1000; // Start with 1 second delay
-        
-        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        try
         {
-            try
+            logger.LogInformation("Searching for page with title: {Title}", pageTitle);
+            
+            // Use search API to find the page (we know this works from Ask command)
+            var searchResults = await bookStackClient.SearchAsync(pageTitle, 1, 10);
+            if (searchResults?.Data == null || !searchResults.Data.Any())
             {
-                var content = await bookStackClient.GetEntityHtmlAsync("page", pageId);
-                if (!string.IsNullOrWhiteSpace(content))
-                {
-                    if (attempt > 1)
-                    {
-                        logger.LogInformation("Successfully fetched page {PageId} on attempt {Attempt}", pageId, attempt);
-                    }
-                    return content;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Attempt {Attempt} failed to fetch page {PageId}", attempt, pageId);
+                logger.LogWarning("No search results found for page title: {Title}", pageTitle);
+                return null;
             }
             
-            if (attempt < maxRetries)
+            // Find exact title match
+            var exactMatch = searchResults.Data.FirstOrDefault(r => 
+                r.Name.Equals(pageTitle, StringComparison.OrdinalIgnoreCase) && 
+                r.Type.Equals("page", StringComparison.OrdinalIgnoreCase));
+                
+            if (exactMatch == null)
             {
-                logger.LogInformation("Page {PageId} not ready yet, waiting {DelayMs}ms before retry {Attempt}/{MaxRetries}", 
-                    pageId, delayMs, attempt + 1, maxRetries);
-                await Task.Delay(delayMs);
-                delayMs *= 2; // Exponential backoff
+                logger.LogWarning("No exact page match found for title: {Title}", pageTitle);
+                return null;
             }
+            
+            logger.LogInformation("Found page via search: Type={Type}, Id={Id}", exactMatch.Type, exactMatch.Id);
+            
+            // Now use the search result to get the content (same as Ask command does)
+            var content = await bookStackClient.GetEntityHtmlAsync(exactMatch.Type, exactMatch.Id);
+            
+            if (!string.IsNullOrWhiteSpace(content))
+            {
+                logger.LogInformation("Successfully fetched page content via search for: {Title}", pageTitle);
+                return content;
+            }
+            
+            logger.LogWarning("Page found via search but content was empty for: {Title}", pageTitle);
+            return null;
         }
-        
-        return null;
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to fetch page content via search for title: {Title}", pageTitle);
+            return null;
+        }
     }
 
     private static async Task<string> GenerateSummary(
