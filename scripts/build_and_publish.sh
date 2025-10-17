@@ -3,29 +3,17 @@ set -e
 
 MAJOR_VERSION="1"
 
-IMAGE_NAME=${1:-"jensbech/discord-bots"}
+IMAGE_NAME=${1:-"git.bechsor.no/jens/discord-bots"}
 PLATFORMS=${PLATFORMS:-"linux/amd64"}
 
 
-REPO_NAME=$(echo "$IMAGE_NAME" | sed 's|.*\/||')
-NAMESPACE=$(echo "$IMAGE_NAME" | sed 's|\/.*||')
 
-CURRENT_VERSION=$(curl -s "https://hub.docker.com/v2/repositories/${NAMESPACE}/${REPO_NAME}/tags/?page_size=100" | \
-    grep -o '"name":"v'${MAJOR_VERSION}'\.[0-9]\+\.[0-9]\+"' | \
-    sed 's/"name":"//;s/"//' | \
-    sort -V | tail -n1 || echo "")
+REPO_NAME=$(echo "$IMAGE_NAME" | sed 's|.*/||')
+NAMESPACE=$(echo "$IMAGE_NAME" | cut -d/ -f2)
 
-if [ -z "$CURRENT_VERSION" ]; then
-    echo "   No previous v${MAJOR_VERSION}.x.x versions found, starting with v${MAJOR_VERSION}.0.0"
-    VERSION="v${MAJOR_VERSION}.0.0"
-else
-    echo "   Current latest v${MAJOR_VERSION}.x.x version: $CURRENT_VERSION"
-    BASE_VERSION=$(echo "$CURRENT_VERSION" | sed 's/^v//')
-    MINOR=$(echo "$BASE_VERSION" | cut -d. -f2)
-
-    MINOR=$((MINOR + 1))
-    VERSION="v${MAJOR_VERSION}.${MINOR}.0"
-    echo "   New version: $VERSION"
+VERSION="v${MAJOR_VERSION}.0.0"
+if docker manifest inspect "$IMAGE_NAME:latest" >/dev/null 2>&1; then
+    VERSION="v${MAJOR_VERSION}.$(date +%Y%m%d%H%M%S).0"
 fi
 
 GIT_COMMIT=$(git rev-parse --short HEAD)
@@ -51,7 +39,7 @@ docker buildx build \
     --tag "$IMAGE_NAME:$VERSION" \
     $build_args \
     --file Dockerfile \
-    --push \
+    --output type=registry \
     .
 
 echo ""
