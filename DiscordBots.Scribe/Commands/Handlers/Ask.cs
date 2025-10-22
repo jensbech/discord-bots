@@ -107,17 +107,7 @@ internal sealed class Ask(IBookStackClient bookStack, IOpenAiClient openAi) : IS
                 TrySuppressEmbeds(msg, logger);
             }
 
-            if (sources.Count > 0)
-            {
-                var srcMsgText =
-                    "Sources:\n"
-                    + string.Join(
-                        "\n",
-                        sources.Take(3).Select((s, _) => $"- {ToMarkdownLink(s.Title, s.Url)}")
-                    );
-                var srcMsg = await command.FollowupAsync(srcMsgText);
-                TrySuppressEmbeds(srcMsg, logger);
-            }
+
 
             logger.LogInformation("/ask {Question} => answered", question);
         }

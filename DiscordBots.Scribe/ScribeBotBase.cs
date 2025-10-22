@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using DiscordBots.BookStack.Interfaces;
@@ -29,16 +31,67 @@ public class ScribeBotBase(
             new Help(),
         }.ToDictionary(h => h.Name, StringComparer.OrdinalIgnoreCase);
 
-    protected override async Task OnSlashCommandAsync(SocketSlashCommand command)
+    protected override Task OnSlashCommandAsync(SocketSlashCommand command)
     {
         if (_handlers.TryGetValue(command.CommandName, out var handler))
         {
-            await handler.HandleAsync(command, logger);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await handler.HandleAsync(command, logger);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(
+                        ex,
+                        "Unhandled exception in async slash command handler for /{Command}",
+                        command.CommandName
+                    );
+
+                    var friendly =
+                        $"Something went wrong handling /{command.CommandName}. Please try again or use /help.";
+
+                    if (!command.HasResponded)
+                    {
+                        try
+                        {
+                            await command.RespondAsync(friendly, ephemeral: true);
+                        }
+                        catch (Exception innerEx)
+                        {
+                            logger.LogError(
+                                innerEx,
+                                "Failed sending initial error response for /{Command}",
+                                command.CommandName
+                            );
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            await command.FollowupAsync(friendly, ephemeral: true);
+                        }
+                        catch (Exception innerEx)
+                        {
+                            logger.LogError(
+                                innerEx,
+                                "Failed sending followup error response for /{Command}",
+                                command.CommandName
+                            );
+                        }
+                    }
+                }
+            });
         }
         else
         {
-            await command.RespondAsync("Unknown command.", ephemeral: true);
+            _ = command.RespondAsync("Unknown command.", ephemeral: true);
             logger.LogSlashError(command, "Unhandled command");
         }
+
+        // Return immediately so the gateway thread is not blocked; each handler runs concurrently.
+        return Task.CompletedTask;
     }
 }
