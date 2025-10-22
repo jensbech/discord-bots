@@ -3,7 +3,7 @@ set -e
 
 MAJOR_VERSION="1"
 
-IMAGE_NAME=${1:-"git.bechsor.no/jens/discord-bots"}
+IMAGE_NAME=${1:-"jensbech/discord-bots"}
 PLATFORMS=${PLATFORMS:-"linux/amd64"}
 
 
