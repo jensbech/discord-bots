@@ -2,7 +2,7 @@ services:
   discord-bored-bot:
     image: jensbech/discord-bots:latest
     container_name: discord-bots
-    restart: unless-stopped
+    restart: always
     ports:
       - "9999:9999"
     environment:
